@@ -1,0 +1,104 @@
+body {
+  /*
+  Background by Harry
+  http://www.freepik.com/free-vector/technological-background-with-full-color-circuits_951748.htm
+  */
+  background: url("../img/background.png"), linear-gradient(-180deg, rgba(255,255,255,0.50) 0%, rgba(0,0,0,0.50) 100%);
+  background-attachment: fixed;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+  text-rendering: optimizeSpeed; /*optimizeLegibility;*/
+}
+canvas {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+.navbar {
+  padding: 0 !important;
+  line-height: 0 !important;
+}
+.hidden {
+  display: none;
+}
+.btn-space {
+  margin-right: 6px;
+}
+.icon-status {
+  font-size: 2em;
+  margin: 8px auto;
+}
+.icon-status .tooltip-inner {
+	text-align: left !important;
+}
+.icon-theme {
+  font-size: 1.5em;
+}
+.fancybox-content {
+  width:60%;
+  border-radius:5px
+}
+.circle-size-1 {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  -moz-border-radius: 50%;
+  -webkit-border-radius: 50%;
+  border: 2px solid;
+}
+.circle-grey {
+  border-color: #808080;
+  background-color: #c0c0c0
+}
+.circle-green {
+  border-color: #00cc00;
+  background-color: #00ff00
+}
+.circle-red {
+  border-color: #e62e00;
+  background-color: #ff704d
+}
+.nav-tabs > li > a {
+  color: #49afcd;
+}
+.nav-tabs > li > a:hover {
+  color: #000000; 
+}
+.chartWrapper {
+  position: relative;
+}
+.chartWrapper > canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events:none;
+}
+.chartAreaWrapper {
+  overflow-x: scroll;
+  overflow-y: scroll;
+  position: relative;
+  width: 100%;
+}
+.chartAreaWrapper2 {
+  position: relative;
+}
+.badge {
+  font-weight: normal !important;
+  padding: 0.25em 0.5em !important;
+  margin: 2px auto !important;
+}
+.btn {
+  padding: 0.375rem 0.75rem !important;
+}
+.form-control {
+  padding: 0.375rem 0.75rem !important;
+}
+.large.tooltip-inner {
+  min-width: 100px;
+  max-width: 80%;
+}
+.fancybox-content {
+  width:65%;
+}

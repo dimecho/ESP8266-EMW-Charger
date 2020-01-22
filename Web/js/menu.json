@@ -1,0 +1,11 @@
+{
+    "menu": [{
+        "id": "EMW Charger",
+        "icon": "icon-plug",
+        "onClick": "/index.php"
+    },{
+        "id": "ESP8266",
+        "icon": "icon-chip",
+        "onClick": "/esp8266.php"
+    }]
+}
