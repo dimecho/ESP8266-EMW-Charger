@@ -9,6 +9,8 @@
 #include "src/ESP8266HTTPUpdateServer.h"
 #define SPIFFS_ALIGNED_OBJECT_INDEX_TABLES 1
 #define LED_BUILTIN 2 //GPIO1=Olimex, GPIO2=ESP-12/WeMos(D4)
+#define FILE_APPEND "a"
+#define SYNC_INTERVAL 500 //mills between data collection and write to SPIFFS
 
 RemoteDebug Debug;
 ESP8266WebServer server(80);
@@ -20,6 +22,9 @@ char ACCESS_POINT_SSID[] = "EMW Charger";
 char ACCESS_POINT_PASSWORD[] = "emwcharger123";
 int ACCESS_POINT_CHANNEL = 1;
 int ACCESS_POINT_HIDE = 0;
+int DATA_LOG = 0; //Enable data logger
+int LOG_INTERVAL = 5; //seconds between data collection and write to SPIFFS
+uint32_t syncTime = 0; // time of last sync()
 bool phpTag[] = { false, false, false };
 const char text_html[] = "text/html";
 const char text_plain[] = "text/plain";
@@ -53,14 +58,17 @@ void setup()
     New ESP can cause "Fatal exception 9(LoadStoreAlignmentCause)" with uninitialized EEPROM
     TODO: Find the solution - ESP.getResetReason()?
   */
-  Serial.println(ESP.getResetReason());
-  if (NVRAM_Read(0) == "") {
+  //Serial.println(ESP.getResetReason());
+  int e = EEPROM.read(0);
+  if (e == 255) { //if (NVRAM_Read(0) == "") {
     NVRAM_Erase();
     NVRAM_Write(0, String(ACCESS_POINT_MODE));
     NVRAM_Write(1, String(ACCESS_POINT_HIDE));
     NVRAM_Write(2, String(ACCESS_POINT_CHANNEL));
     NVRAM_Write(3, ACCESS_POINT_SSID);
     NVRAM_Write(4, ACCESS_POINT_PASSWORD);
+    NVRAM_Write(7, String(DATA_LOG));
+    NVRAM_Write(8, String(LOG_INTERVAL));
     SPIFFS.format();
   } else {
     ACCESS_POINT_MODE = NVRAM_Read(0).toInt();
@@ -70,6 +78,8 @@ void setup()
     s.toCharArray(ACCESS_POINT_SSID, s.length() + 1);
     String p = NVRAM_Read(4);
     p.toCharArray(ACCESS_POINT_PASSWORD, p.length() + 1);
+    DATA_LOG = NVRAM_Read(7).toInt();
+    LOG_INTERVAL = NVRAM_Read(8).toInt();
   }
   //EEPROM.end();
 
@@ -145,6 +155,8 @@ void setup()
   */
   ArduinoOTA.begin();
 
+  LOG_INTERVAL =  LOG_INTERVAL * 1000; //convert seconds to miliseconds
+
   //===============
   //Web OTA Updater
   //===============
@@ -186,6 +198,7 @@ void setup()
       //DEBUG
       //server.send(200, text_plain, "M,R:M222,V061,c020,v246,E");
       //server.send(200, text_plain, "M,D000,C096,V334,T038,O001,Ssss,E");
+      //server.send(200, text_plain, "M,D000,C096,V334,T038,O001,Ssss,E\nM,D000,C096,V334,T038,O001,Ssss,E");
 
       String out = flushSerial();
       server.send(200, text_plain, out);
@@ -243,7 +256,22 @@ void loop()
   Debug.handle();
   ArduinoOTA.handle();
   server.handleClient();
-  yield();
+
+  if (DATA_LOG == 0 || (millis() - syncTime) < LOG_INTERVAL) return;
+  syncTime = millis();
+
+  FSInfo fs_info;
+  SPIFFS.info(fs_info);
+
+  if (fs_info.usedBytes <  fs_info.totalBytes)
+  {
+    File file = SPIFFS.open("/data.txt", FILE_APPEND);
+    if (!file) {
+      return;
+    }
+    file.println(flushSerial());
+    file.close();
+  }
 }
 
 //=============
@@ -282,7 +310,7 @@ void NVRAMUpload()
 
   //skip confirm password (5)
 
-  for (uint8_t i = 6; i <= 7; i++) {
+  for (uint8_t i = 6; i <= 8; i++) {
     out += server.argName(i) + ": ";
     NVRAM_Write(i - 1, server.arg(i));
     out += NVRAM_Read(i - 1) + "\n";
@@ -454,36 +482,23 @@ String getContentType(String filename)
 //===================
 String flushSerial()
 {
-  String output;
-  uint8_t timeout = 8;
+  Serial.readStringUntil('M');
 
-  while (Serial.available() && timeout > 0) {
-    output = Serial.readString(); //flush all previous output
-    timeout--;
-  }
-  return output;
+  return "M" + Serial.readStringUntil('\n');
 }
 
 String readSerial(String cmd)
 {
-  char b[255];
-  String output = flushSerial();
-
   //Debug.println(cmd);
 
   Serial.print(cmd);
   Serial.print("\n");
-  Serial.readStringUntil('\n'); //consume echo
-  //for (uint16_t i = 0; i <= cmd.length() + 1; i++)
-  //  Serial.read();
-  size_t len = 0;
-  do {
-    memset(b, 0, sizeof(b));
-    len = Serial.readBytes(b, sizeof(b) - 1);
-    output += b;
-  } while (len > 0);
 
+  SPIFFS.remove("/data.txt");
+
+  return cmd;
+
+  //String output = Serial.readStringUntil('\n');
   //Debug.println(output);
-
-  return output;
+  //return output
 }

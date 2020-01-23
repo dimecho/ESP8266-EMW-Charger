@@ -1,12 +1,11 @@
 var refreshTimer;
-var refreshSpeed = 2000;
+var refreshSpeed = 3000;
 
 function initializeSerial() {
 
     //$.ajax("serial.php?init=115200", {
     $.ajax("serial.php?init=19200", {
         async: true,
-        timeout: 6400,
         success: function(data) {
             console.log(data);
             if(data.toUpperCase().indexOf("OK") != -1)
@@ -47,6 +46,12 @@ function startCharger() {
 	var vvv = $("#voltage").val();
 	var ccc = $("#current").val();
 	var crc = $("#crc").val();
+
+	if(vvv == "" || ccc == "" || crc == "")
+	{
+		$.notify({ message: "Fillout all input fields." }, { type: "danger" });
+		return;
+	}
 
 	$.notify({ message: "M," + vvv +"," + ccc + "," + crc + ",E" }, { type: "success" });
 
@@ -92,12 +97,17 @@ function getChargerState() {
 
 	$.ajax("serial.php?get=status", {
         async: true,
-        timeout: 6400,
+        timeout: refreshSpeed + 100,
         success: function(data) {
             console.log(data);
+
+            if (data.indexOf("\n") != -1) { //multi line stream
+        		var d = data.split('\n');
+        		data = d[d.length-1]; //last one
+        	}
+
             if (data.indexOf("M,") != -1) {
             	chargerValues.empty();
-
             	var s = data.replace("M,", "").split(',');
             	for(var i = 0; i < s.length; i++) {
 					if(s[i].indexOf("R") != -1) {

@@ -31,7 +31,7 @@ A simple web interface with UART control based on [Remote Control Protocols for 
 
     [Build]
 
-    1) Run data-build.ps1 build data directory
+    1) Run spiffs-build.ps1 build SPIFFS filesystem
     2) Open ESP8266-EMW-Charger.ino with Arduino IDE
     3) Sketch -> Export compiled Binary
 

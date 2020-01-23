@@ -4,6 +4,10 @@
         "icon": "icon-plug",
         "onClick": "/index.php"
     },{
+        "id": "Graph",
+        "icon": "icon-graph",
+        "onClick": "/graph.php"
+    },{
         "id": "ESP8266",
         "icon": "icon-chip",
         "onClick": "/esp8266.php"
