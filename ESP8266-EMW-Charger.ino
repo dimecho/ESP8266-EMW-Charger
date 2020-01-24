@@ -6,11 +6,10 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
-#include "src/ESP8266HTTPUpdateServer.h"
+#include <ESP8266HTTPUpdateServer.h>
 #define SPIFFS_ALIGNED_OBJECT_INDEX_TABLES 1
 #define LED_BUILTIN 2 //GPIO1=Olimex, GPIO2=ESP-12/WeMos(D4)
 #define FILE_APPEND "a"
-#define SYNC_INTERVAL 500 //mills between data collection and write to SPIFFS
 
 RemoteDebug Debug;
 ESP8266WebServer server(80);
@@ -18,13 +17,13 @@ ESP8266HTTPUpdateServer updater;
 File fsUpload;
 
 int ACCESS_POINT_MODE = 0;
-char ACCESS_POINT_SSID[] = "EMW Charger";
-char ACCESS_POINT_PASSWORD[] = "emwcharger123";
+char ACCESS_POINT_SSID[] = "Charger";
+char ACCESS_POINT_PASSWORD[] = "charger123";
 int ACCESS_POINT_CHANNEL = 1;
 int ACCESS_POINT_HIDE = 0;
 int DATA_LOG = 0; //Enable data logger
 int LOG_INTERVAL = 5; //seconds between data collection and write to SPIFFS
-uint32_t syncTime = 0; // time of last sync()
+uint32_t syncTime = 0;
 bool phpTag[] = { false, false, false };
 const char text_html[] = "text/html";
 const char text_plain[] = "text/plain";
@@ -33,9 +32,8 @@ const char text_json[] = "application/json";
 void setup()
 {
   Serial.begin(19200, SERIAL_8N1);
-  //Serial.begin(115200, SERIAL_8N1);
+  Serial.setTimeout(1000);
 
-  //Serial.setTimeout(1000);
   //Serial.setDebugOutput(true);
 
   uint8_t timeout = 10;
@@ -67,8 +65,8 @@ void setup()
     NVRAM_Write(2, String(ACCESS_POINT_CHANNEL));
     NVRAM_Write(3, ACCESS_POINT_SSID);
     NVRAM_Write(4, ACCESS_POINT_PASSWORD);
-    NVRAM_Write(7, String(DATA_LOG));
-    NVRAM_Write(8, String(LOG_INTERVAL));
+    NVRAM_Write(5, String(DATA_LOG));
+    NVRAM_Write(6, String(LOG_INTERVAL));
     SPIFFS.format();
   } else {
     ACCESS_POINT_MODE = NVRAM_Read(0).toInt();
@@ -78,8 +76,8 @@ void setup()
     s.toCharArray(ACCESS_POINT_SSID, s.length() + 1);
     String p = NVRAM_Read(4);
     p.toCharArray(ACCESS_POINT_PASSWORD, p.length() + 1);
-    DATA_LOG = NVRAM_Read(7).toInt();
-    LOG_INTERVAL = NVRAM_Read(8).toInt();
+    DATA_LOG = NVRAM_Read(5).toInt();
+    LOG_INTERVAL = NVRAM_Read(6).toInt();
   }
   //EEPROM.end();
 
@@ -186,8 +184,6 @@ void setup()
   server.on("/serial.php", HTTP_GET, []() {
     if (server.hasArg("init"))
     {
-      //flushSerial();
-
       Serial.end();
       Serial.begin(server.arg("init").toInt(), SERIAL_8N1);
 
@@ -195,17 +191,15 @@ void setup()
     }
     else if (server.hasArg("get"))
     {
-      //DEBUG
-      //server.send(200, text_plain, "M,R:M222,V061,c020,v246,E");
-      //server.send(200, text_plain, "M,D000,C096,V334,T038,O001,Ssss,E");
-      //server.send(200, text_plain, "M,D000,C096,V334,T038,O001,Ssss,E\nM,D000,C096,V334,T038,O001,Ssss,E");
-
       String out = flushSerial();
       server.send(200, text_plain, out);
     }
     else if (server.hasArg("command"))
     {
       String out = readSerial(server.arg("command"));
+      
+      SPIFFS.remove("/data.txt");
+      
       Debug.println(out);
       server.send(200, text_plain, out);
     }
@@ -260,17 +254,18 @@ void loop()
   if (DATA_LOG == 0 || (millis() - syncTime) < LOG_INTERVAL) return;
   syncTime = millis();
 
-  FSInfo fs_info;
-  SPIFFS.info(fs_info);
+  String output = flushSerial();
 
-  if (fs_info.usedBytes <  fs_info.totalBytes)
-  {
-    File file = SPIFFS.open("/data.txt", FILE_APPEND);
-    if (!file) {
-      return;
+  if (output.indexOf("D") != -1) { //Capture reports only
+    FSInfo fs_info;
+    SPIFFS.info(fs_info);
+
+    if (fs_info.usedBytes < fs_info.totalBytes)
+    {
+      File file = SPIFFS.open("/data.txt", FILE_APPEND);
+      file.print(output);
+      file.close();
     }
-    file.println(flushSerial());
-    file.close();
   }
 }
 
@@ -310,7 +305,7 @@ void NVRAMUpload()
 
   //skip confirm password (5)
 
-  for (uint8_t i = 6; i <= 8; i++) {
+  for (uint8_t i = 6; i <= 7; i++) {
     out += server.argName(i) + ": ";
     NVRAM_Write(i - 1, server.arg(i));
     out += NVRAM_Read(i - 1) + "\n";
@@ -320,6 +315,8 @@ void NVRAMUpload()
 
   server.sendHeader("Refresh", "8; url=/esp8266.php");
   server.send(200, text_html, out);
+
+  SPIFFS.remove("/data.txt");
 
   delay(4000);
   ESP.restart();
@@ -441,6 +438,8 @@ bool HTTPServer(String file)
           //response += "\n";
         }
         server.send(200, contentType, response);
+      } else if (file.indexOf("data.txt") > 0) {
+        server.streamFile(f, contentType);
       } else {
         server.sendHeader("Content-Encoding", "gzip");
         server.streamFile(f, contentType);
@@ -482,9 +481,18 @@ String getContentType(String filename)
 //===================
 String flushSerial()
 {
-  Serial.readStringUntil('M');
+  String output;
 
-  return "M" + Serial.readStringUntil('\n');
+  //DEBUG
+  //output = "M,R:M222,V061,c020,v246,E\n";
+  //output = "M,D000,C096,V334,T038,O001,Ssss,E\n";
+  //output = "M,D000,C096,V334,T038,O001,Ssss,E\nM,D000,C096,V334,T038,O001,Ssss,E\n";
+
+  if (Serial.available()) {
+    Serial.readStringUntil('M');
+    output = "M" + Serial.readStringUntil('\n');
+  }
+  return output;
 }
 
 String readSerial(String cmd)
@@ -493,8 +501,6 @@ String readSerial(String cmd)
 
   Serial.print(cmd);
   Serial.print("\n");
-
-  SPIFFS.remove("/data.txt");
 
   return cmd;
 

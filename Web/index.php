@@ -13,7 +13,6 @@
             <div class="row" align="center">
                 <div class="col">
                     <hr>
-                    <i class="d-none icons icon-com display-2" id="com"></i>
                     <div class="container table-active table-bordered">
                         <div class="row p-2">
                             <div class="col">
@@ -22,6 +21,7 @@
                         </div>
                     </div>
                     <br/><br/>
+                    <i class="d-none icons icon-com display-2 p-4" id="com"></i>
                     <div class="d-none container table-active table-bordered" id="chargerStatus">
                         <div class="row p-2">
                             <div class="col text-dark" id="chargerValues">
@@ -64,22 +64,9 @@
                             </div>
                         </div>
                     </div>
-                    <hr>
-                </div>
-            </div>
-            <div class="row" align="center">
-                <div class="col">
-                    <hr>
-                    <div class="d-none spinner-border text-dark" id="loader-parameters"></div>
-                    <i class="d-none icons icon-com display-2" id="com"></i>
-                    <hr>
-                </div>
-            </div>
-            <div class="row" align="center">
-                <div class="col">
-                    <table class="table table-active table-bordered bg-light table-striped table-hover" id="parameters"></table>
                 </div>
             </div>
         </div>
+        <br/><br/>
     </body>
 </html>

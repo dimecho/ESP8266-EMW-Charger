@@ -12,6 +12,10 @@ function progressTimer() {
     }
 };
 
+function formValidate() {
+    WiFiPasswordConfirm.setCustomValidity(WiFiPasswordConfirm.value != WiFiPassword.value ? "Passwords do not match." : "");
+};
+
 function HiddenCheck(id,element) {
     if(element.checked) {
         $("#" + id).val("1");
@@ -22,9 +26,8 @@ function HiddenCheck(id,element) {
 
 $(document).ready(function() {
     
-    $("#esp8266-nvram").removeClass("d-none"); //.show();
     $("#esp8266-flash-select").removeClass("d-none"); //.show();
-    
+
     $.ajax("/nvram", {
         dataType: 'json',
         success: function success(data) {
@@ -39,8 +42,21 @@ $(document).ready(function() {
             $("#WiFiHiddenCheckbox").prop("checked", bool_value);
             $("#WiFiChannel").val(data["nvram2"]);
             $("#WiFiSSID").val(data["nvram3"]);
+
+            bool_value = data["nvram5"] == "1" ? true : false;
+            $("#EnableLOG").val(data["nvram5"]);
+            $("#EnableLOGCheckbox").prop("checked", bool_value);
+
+            $("#EnableLOGInterval").val(data["nvram6"]);
             $(".spinner-border").addClass("d-none"); //.hide();
             $("#parameters").removeClass("d-none"); //.show();
+        }
+    });
+
+    $("#EnableLOGInterval").on("input", function() {
+        var v = parseInt(this.value);
+        if(v < 10) {
+            $.notify({ message: "Log Interval " + v + " is low, Flash may fill up fast!" }, { type: "warning" });
         }
     });
 

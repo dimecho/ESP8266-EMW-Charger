@@ -11,11 +11,11 @@
 	<div class="container">
 		<div class="row">
 			<div class="col">
-			    <table class="table table-active table-bordered d-none" id="esp8266-nvram">
+			    <table class="table table-active table-bordered">
                     <tr>
                         <td>
                         	<center><div class="spinner-border text-dark"></div></center>
-                        	<form method="POST" action="/nvram" id="parameters" oninput='WiFiPasswordConfirm.setCustomValidity(WiFiPasswordConfirm.value != WiFiPassword.value ? "Passwords do not match." : "")'>
+                        	<form method="POST" action="/nvram" id="parameters" oninput="formValidate()">
                         		<fieldset class="form-group">
                         			<legend>ESP8266 Wireless Connection:</legend>
 		                        	<div class="form-check">
@@ -67,13 +67,29 @@
 								<div class="form-group">
 									<div class="input-group">
 										<div class="input-group-addon"><i class="icons icon-password p-3"></i></div>
-								    	<input type="password" id="WiFiPassword" name="WiFiPassword" class="form-control" placeholder="Password" required>
+								    	<input type="password" id="WiFiPassword" name="WiFiPassword" class="form-control" aria-describedby="passwordHelpBlock" placeholder="Password" required>
 									</div>
+									<small id="passwordHelpBlock" class="form-text text-muted pr-5">
+										WPA2 password must be 8-20 characters long.
+									</small>
 								</div>
 								<div class="form-group">
 									<div class="input-group">
 										<div class="input-group-addon"><i class="icons icon-password p-3"></i></div>
 								    	<input type="password" id="WiFiPasswordConfirm" name="WiFiPasswordConfirm" class="form-control" placeholder="Password Confirm">
+									</div>
+								</div>
+								<div class="form-group">
+									<label for="EnableLOGCheckbox">Data Logger</label>
+									<div class="form-check">
+									  <label class="form-check-label">
+										  	<input type="hidden" id="EnableLOG" name="EnableLOG" value="0">
+									    	<input type="checkbox" id="EnableLOGCheckbox" class="form-check-input" onclick="HiddenCheck('EnableLOG',this)"> Enable Data Collection
+									  </label>
+									</div>
+									<div class="input-group">
+										<div class="input-group-addon"><i class="icons icon-puzzle p-3"></i></div>
+								    	<input type="text" id="EnableLOGInterval" name="EnableLOGInterval" class="form-control" placeholder="Log Interval (seconds)">
 									</div>
 								</div>
 								<center><button type="submit" class="btn btn-success"><i class="icons icon-ok"></i> Save</button></center>
@@ -101,16 +117,12 @@
 			</div>
 		</div>
 	</div>
-	<form method="POST" action="/update?cmd=0" enctype="multipart/form-data" id="formSketch">
-		<input type="hidden" name="cmd" value="0" />
-		<input type="hidden" name="interface" />
-		<input type="file" name="firmware" id="fileSketch" hidden />
+	<form method="POST" action="/update" enctype="multipart/form-data" id="formSketch">
+		<input type="file" accept=".bin" name="firmware" id="fileSketch" hidden />
 		<input type="submit" hidden />
 	</form>
-	<form method="POST" action="/update?cmd=100" enctype="multipart/form-data" id="formSPIFFS">
-		<input type="hidden" name="cmd" value="100" />
-		<input type="hidden" name="interface" />
-		<input type="file" name="spiffs" id="fileSPIFFS" hidden />
+	<form method="POST" action="/update" enctype="multipart/form-data" id="formSPIFFS">
+		<input type="file" accept=".bin" name="filesystem" id="fileSPIFFS" hidden />
 		<input type="submit" hidden />
 	</form>
 </body>

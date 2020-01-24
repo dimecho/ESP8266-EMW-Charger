@@ -10,6 +10,12 @@ A simple web interface with UART control based on [Remote Control Protocols for 
 
 ![ESP8266](Web/img/esp8266.png?raw=true) [Download for ESP8266](../../releases/download/1.0/ESP8266-EMW-Charger.zip)
 
+## Connect
+
+    SSID: Charger
+    Password: charger123
+    Interface: http://192.168.4.2
+
 ## Install
 
     1) Connect to ESP8266 USB-Serial-TTL
@@ -26,8 +32,8 @@ A simple web interface with UART control based on [Remote Control Protocols for 
     [Arduino IDE Setup]
 
     1) Arduino/File -> Preferences -> Additional Boards Manager URLs: http://arduino.esp8266.com/stable/package_esp8266com_index.json
-    2) Tools -> Boards -> Board Manager -> esp8266 -> Install (v2.5.2)
-    3) Tools -> Boards -> WeMos D1 R1 -> Flash Size -> 4M (2M SPIFFS)
+    2) Tools -> Boards -> Board Manager -> esp8266 -> Install
+    3) Tools -> Boards -> WeMos D1 R1 -> Flash Size -> 4M (3M SPIFFS)
 
     [Build]
 

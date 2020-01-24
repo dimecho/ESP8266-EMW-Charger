@@ -1,5 +1,7 @@
 var refreshTimer;
 var refreshSpeed = 3000;
+var errorNotify = false;
+var mainVoltage = 0;
 
 function initializeSerial() {
 
@@ -29,8 +31,6 @@ function initializeSerial() {
         }, error: function (data, textStatus, errorThrown) { //only for Windows (blocking UART)
         	console.log(textStatus);
         	console.log(data);
-            $.notify({ message: "Try swapping TX <-> RX" }, { type: "warning" });
-            $("#com").removeClass("d-none"); //.show();
         }
     });
 
@@ -53,12 +53,15 @@ function startCharger() {
 		return;
 	}
 
-	$.notify({ message: "M," + vvv +"," + ccc + "," + crc + ",E" }, { type: "success" });
+	$.notify({ message: "M," + ccc +"," + vvv + "," + crc + ",E" }, { type: "success" });
 
-	$.ajax("serial.php?command=M," + vvv + "," + ccc + "," + crc + ",E", {
-        async: false,
+	$.ajax("serial.php?command=M," + ccc + "," + vvv + "," + crc + ",E", {
+        async: true,
         success: function(data) {
             console.log(data);
+
+            $("#com").addClass("d-none"); //.hide();
+            errorNotify = false;
         }, error: function (data, textStatus, errorThrown) { //only for Windows (blocking UART)
         	console.log(textStatus);
         	console.log(data);
@@ -71,11 +74,13 @@ function stopCharger() {
 	var opStatus = $("#opStatus");
 
 	$.ajax("serial.php?command=M,001,000,001,E", {
-        async: false,
+        async: true,
         success: function(data) {
             console.log(data);
 
-            clearTimeout(refreshTimer);
+            //clearTimeout(refreshTimer);
+
+            $.notify({ message: 'Charging Stopped!' }, { type: 'danger' });
 
             var st = $("<h2>",{ class: "text-warning" }).append("WAITING");
         	opStatus.empty();
@@ -97,18 +102,30 @@ function getChargerState() {
 
 	$.ajax("serial.php?get=status", {
         async: true,
-        timeout: refreshSpeed + 100,
+        timeout: refreshSpeed + 200,
         success: function(data) {
             console.log(data);
 
+            if (data == "" && errorNotify == false) {
+            	errorNotify = true;
+            	$.notify({ message: "Try swapping TX <-> RX" }, { type: "warning" });
+            	$("#com").removeClass("d-none"); //.show();
+            	return;
+        	}
+            /*
             if (data.indexOf("\n") != -1) { //multi line stream
         		var d = data.split('\n');
         		data = d[d.length-1]; //last one
         	}
-
+            */
             if (data.indexOf("M,") != -1) {
-            	chargerValues.empty();
-            	var s = data.replace("M,", "").split(',');
+            	
+            	var s = data.split(',');
+            	var info = "";
+
+                if(mainVoltage != 0)
+                    info += "Main Voltage: " + mainVoltage + "V<br/>";
+
             	for(var i = 0; i < s.length; i++) {
 					if(s[i].indexOf("R") != -1) {
 				    	opStatus.empty();
@@ -118,28 +135,31 @@ function getChargerState() {
                 		opStatus.append($("<h2>",{ class: "text-danger" }).append("CHARGING " + parseInt(s[i].replace("D", "")) + "%"));
 				    }else if(s[i].indexOf("M") != -1) {
 				    	var v = parseInt(s[i].replace("M", ""));
-				    	chargerValues.append("Main Voltage: " + v + "V<br/>");
+                        if(isNaN(v)) { continue; }
+                            mainVoltage = v;
 				    }else if(s[i].indexOf("V") != -1) {
 				    	var v = parseInt(s[i].replace("V", ""));
-				    	chargerValues.append("Voltage Output: " + v + "V<br/>");
+				    	info += "Voltage Output: " + v + "V<br/>";
 				    }else if(s[i].indexOf("C") != -1) {
-				    	var v = parseInt(s[i].replace("C", ""));
-				    	chargerValues.append("Current: " + v + "A<br/>");
+				    	var v = parseInt(s[i].replace("C", ""))/10;
+				    	info += "Current: " + v + "A<br/>";
 				    }else if(s[i].indexOf("c") != -1) {
 				    	var v = parseInt(s[i].replace("c", ""));
-				    	chargerValues.append("Current Setting: " + v + "A<br/>");
+				    	info += "Current Setting: " + v + "A<br/>";
 				    }else if(s[i].indexOf("v") != -1) {
 				    	var v = parseInt(s[i].replace("v", ""));
-				    	chargerValues.append("Voltage Setting: " + v + "V<br/>");
+				    	info += "Voltage Setting: " + v + "V<br/>";
 				    }else if(s[i].indexOf("T") != -1) {
 				    	var v = parseInt(s[i].replace("T", ""));
-				    	chargerValues.append("Heatsink Temp: " + v + "C<br/>");
+				    	info += "Heatsink Temp: " + v + "C<br/>";
 				    }else if(s[i].indexOf("O") != -1) {
 				    	var v = parseInt(s[i].replace("O", ""));
-				    	chargerValues.append("Output Charge: " + v + "AH<br/>");
+				    	info += "Output Charge: " + v + "AH<br/>";
 				    }
 				}
-            	chargerStatus.removeClass("d-none");
+				chargerValues.empty();
+				chargerValues.append(info);
+				chargerStatus.removeClass("d-none");
         	}
         }, error: function (data, textStatus, errorThrown) {
         	console.log(textStatus);

@@ -1,36 +1,31 @@
-var json = {};
-var lineWidth = 1;
+var lineWidth = 2;
 
 var chart_charge_datasets = [{
 	type: "line",
-	id: "volts",
+	id: "Volts",
 	label: "Volts",
+    fill: false,
 	backgroundColor: "rgba(255,99,132,0.2)",
 	borderColor: "rgba(255,99,132,1)",
 	borderWidth: lineWidth,
-	hoverBackgroundColor: "rgba(255,99,132,0.4)",
-	hoverBorderColor: "rgba(255,99,132,1)",
-	data: [0],
+	data: [],
 	yAxisID: "y-axis-0"
 }, {
 	type: "line",
-	id: "current",
+	id: "Current",
 	label: "Current",
-	backgroundColor: "rgba(102, 255, 51, 0.2)",
-	borderColor: "rgba(0,0,0,0.2)",
-	borderWidth: lineWidth,
-	hoverBackgroundColor: "rgba(102, 255, 51, 0.4)",
-	hoverBorderColor: "rgba(0,0,0,0.5)",
-	data: [0],
+    fill: false,
+    backgroundColor: "rgba(52,152,219,0.2)",
+    borderColor: "rgba(52,152,219,1)",
+    borderWidth: lineWidth,
+	data: [],
 	yAxisID: "y-axis-1"
 }];
 
-var zoomFactor = 1;
 var graphDivision = 60;
-var streamLoop = 1;
-var pageLimit = 4;
 var streamTimer;
 var data = {};
+var options = {};
 var chart;
 var ctxAxis;
 var ctx;
@@ -46,8 +41,13 @@ $(document).ready(function () {
     ctx = canvas.getContext("2d");
 	ctxAxis = document.getElementById("chartAxis").getContext("2d");
 
-    if(os === "mobile") {
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
+        graphDivision = 40;
+
         Chart.defaults.global.animationSteps = 0;
+        //Chart.defaults.global.elements.line.tension = 0;
+        //Chart.defaults.global.animation.duration = 800;
+
         canvas.height = 800;
         ctxFont = 40;
     }else{
@@ -55,9 +55,18 @@ $(document).ready(function () {
         canvas.height = 640;
     }
 
-    buildGraphMenu();
-
     initChart();
+
+    $.ajax("/nvram", {
+        dataType: 'json',
+        success: function success(data) {
+            console.log(data);
+            bool_value = data["nvram5"] == "1" ? true : false;
+            if(bool_value == false) {
+                $.notify({ message: "Data Collection is Disabled in <a href='esp8266.php'>ESP8266</a>" }, { type: "warning" });
+            }
+        }
+    });
 });
 
 function graphTheme() {
@@ -84,10 +93,6 @@ function addYAxis(datasets,options) {
 
 function newYAxis(key,id,options,side,visible) {
 
-    var min = 1;
-	var max = 100;
-	var step = 1;
-
     var y_axis = {
         display: visible,
         id: id,
@@ -96,14 +101,15 @@ function newYAxis(key,id,options,side,visible) {
         	display: true,
         	fontColor: ctxFontColor,
             fontSize: ctxFont,
-            labelString: label //datasets[1].label
+            labelString: key
         },
         ticks: {
+        	beginAtZero: false,
         	fontColor: ctxFontColor,
             fontSize: ctxFont,
-            stepSize: step,
-            suggestedMin: min, //auto scale
-            suggestedMax: max //auto scale
+            stepSize: 1,
+            suggestedMin: 1, //auto scale
+            suggestedMax: 10 //auto scale
         },
         gridLines: {
             drawOnChartArea: visible,
@@ -117,32 +123,42 @@ function newYAxis(key,id,options,side,visible) {
     //console.log(options);
 };
 
-function buildGraphMenu() {
-    //os = "mobile";
+function exportPNG() {
 
-    var menu = $("#buildGraphMenu"); //.empty();
-    var menu_buttons = $("#buildGraphButtons"); //.empty();
-    var export_buttons = $("#buildGraphExport"); //.empty();
+    var render = ctx.canvas.toDataURL("image/png", 1.0);
+    var d = new Date();
 
-	var btn_points_i = $("<i>", { class: "icons icon-ok" });
-    var e_img = $("<i>", { class: "icons icon-status icon-png p-2", onClick: "exportPDF()", "data-toggle": "tooltip", "title": "Export Image" });
-    var e_csv = $("<i>", { class: "icons icon-status icon-csv p-2", onClick: "exportCSV()", "data-toggle": "tooltip", "title": "Export CSV" });
+    var data = atob(render.substring("data:image/png;base64,".length)),
+        asArray = new Uint8Array(data.length);
 
-    export_buttons.append(e_img);
-
-    if (os === "mobile") {
-
-        graphDivision = 40;
-    }else{
-        export_buttons.append(e_csv);
+    for (var i = 0, len = data.length; i < len; ++i) {
+        asArray[i] = data.charCodeAt(i);
     }
+    var blob = new Blob([asArray.buffer], { type: "image/png" });
 
-    $('[data-toggle="tooltip"]').tooltip();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "graph " + d.getDate() + "-" + (d.getMonth() + 1) + "-" + d.getFullYear() + " " + (d.getHours() % 12 || 12) + "-" + d.getMinutes() + " " + (d.getHours() >= 12 ? 'pm' : 'am') + ".png";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }, 0);
+};
+
+function exportRAW() {
+    var link = document.createElement("a");
+    link.setAttribute("href", "data.txt");
+    link.setAttribute("download", "data.txt");
+    document.body.appendChild(link); // Required for FF
+    link.click();
 };
 
 function exportCSV() {
 
-    var datasets = activeDatasets();
+    var datasets = chart_charge_datasets;
     var points = idDatasets(datasets);
     var value = csvDatasets(datasets);
 
@@ -177,24 +193,83 @@ function exportCSV() {
 
 function initChart() {
 
-    data = {};
-    options = {};
+    data = {
+        labels: initTimeAxis(graphDivision),
+        datasets: chart_charge_datasets
+    };
 
-    var duration = 0;
-
-    if(os !== "mobile")
-        duration = syncronizedDelay/2;
-
-    initChargeChart(duration);
-
-    if (chart) chart.destroy();
-
-	//Chart.defaults.global.elements.line.tension = 0;
-	//Chart.defaults.global.animation.duration = 800;
+    options = {
+        legend: {
+            labels: {
+                fontColor: ctxFontColor,
+                fontSize: ctxFont
+            }
+        },
+        elements: {
+            point: {
+                radius: 0
+            }
+        },
+        tooltips: {
+            enabled: false
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            xAxes: [{
+                position: 'bottom',
+                scaleLabel: {
+                    fontColor: ctxFontColor,
+                    fontSize: ctxFont,
+                    labelString: 'Time (hh:mm:ss)'
+                },
+                ticks: {
+                	beginAtZero: true,
+                    fontColor: ctxFontColor,
+                    fontSize: ctxFont,
+                    maxRotation: 90,
+                    reverse: false
+                },
+                gridLines: {
+                  color: ctxGridColor
+                }
+            }],
+            yAxes: [] //Dynamically added
+        }
+    };
 	
+    $.ajax("data.txt", {
+        async: false,
+        success: function success(logs) {
+            var line = logs.split('\n');
+
+            data.labels = initTimeAxis(line.length);
+
+            for(var i = 0; i < line.length; i++) {
+                var s = line[i].split(',');
+                for(var x = 0; x < s.length; x++) {
+                    if(s[x].indexOf("V") != -1) {
+                        var v = parseInt(s[x].replace("V", ""));
+                        chart_charge_datasets[0].data.push(v);
+                    }else if(s[x].indexOf("C") != -1) {
+                        var v = parseFloat(s[x].replace("C", ""))/10;
+                        chart_charge_datasets[1].data.push(v);
+                    }
+                }
+            }
+        }, error: function (data, textStatus, errorThrown) {
+            console.log(textStatus);
+            console.log(data);
+        }
+    });
+
+    addYAxis(chart_charge_datasets,options);
+
+	options.scales.yAxes[0].ticks.suggestedMax = chart_charge_datasets[0].data.max()*1.1;
+	options.scales.yAxes[1].ticks.suggestedMax = chart_charge_datasets[1].data.max()*1.1;
+
     chart = new Chart(ctx, {
         type: 'line',
-        //type: 'bar',
         data: data,
         options: options
     });
@@ -257,62 +332,10 @@ function initTimeAxis(seconds, labels, stamp) {
     return xaxis;
 };
 
-function initChargeChart(duration) {
+Array.prototype.max = function() {
+  return Math.max.apply(null, this);
+};
 
-    data = {
-        labels: initTimeAxis(graphDivision),
-        datasets: chart_charge_datasets
-    };
-
-    options = {
-        legend: {
-            labels: {
-            	fontColor: ctxFontColor,
-                fontSize: ctxFont
-            }
-        },
-        elements: {
-            point: {
-                radius: 0
-            }
-        },
-        tooltips: {
-            enabled: false
-        },
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            xAxes: [{
-                position: 'bottom',
-                scaleLabel: {
-                	fontColor: ctxFontColor,
-                    fontSize: ctxFont,
-                    labelString: 'Time (hh:mm:ss)'
-                },
-                ticks: {
-                	fontColor: ctxFontColor,
-                    fontSize: ctxFont,
-                    maxRotation: 90,
-                    reverse: false
-                },
-                gridLines: {
-				  color: ctxGridColor
-				}
-            }],
-            yAxes: [] //Dynamically added
-        },
-        plugins: {
-            datalabels: {
-            	color: ctxFontColor,
-                font: ctxFont,
-	            align: 'top',
-	            display: showDataLabels,
-	            backgroundColor: function(context) {
-					return context.dataset.backgroundColor;
-				}
-            }
-        }
-    };
-
-    addYAxis(chart_motor_datasets,options);
+Array.prototype.min = function() {
+  return Math.min.apply(null, this);
 };
