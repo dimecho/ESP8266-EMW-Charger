@@ -79,6 +79,7 @@ void setup()
     //=====================
     //WiFi Access Point Mode
     //=====================
+    WiFi.setPhyMode(WIFI_PHY_MODE_11B); // WIFI_PHY_MODE_11G / WIFI_PHY_MODE_11N
     WiFi.mode(WIFI_AP);
     IPAddress ip(192, 168, 4, 2);
     IPAddress gateway(192, 168, 4, 2);
@@ -92,6 +93,8 @@ void setup()
     //WiFi Client Mode
     //================
     WiFi.mode(WIFI_STA);
+    WiFi.persistent(false);
+    WiFi.disconnect(true);
     WiFi.begin(ACCESS_POINT_SSID, ACCESS_POINT_PASSWORD);  //Connect to the WiFi network
     //WiFi.enableAP(0);
     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
