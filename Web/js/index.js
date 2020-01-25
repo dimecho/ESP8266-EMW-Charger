@@ -47,11 +47,21 @@ function startCharger() {
 	var ccc = $("#current").val();
 	var crc = $("#crc").val();
 
-	if(vvv == "" || ccc == "" || crc == "")
-	{
-		$.notify({ message: "Fillout all input fields." }, { type: "danger" });
+	if(vvv == "" || ccc == "" || crc == "") {
+		$.notify({ message: "Input fields cannot be empty" }, { type: "danger" });
+		return;
+	}else if (isInt(parseInt(vvv)) == false || isFloat(parseFloat(ccc)) == false || isInt(parseInt(crc)) == false) {
+		$.notify({ message: 'Input value must be a number' }, { type: 'danger' });
 		return;
 	}
+
+	vvv = "00" + vvv;
+	ccc = "00" + ccc.replace(".","");
+	crc = "00" + crc;
+
+	vvv = vvv.substr(vvv.length - 3);
+	ccc = ccc.substr(ccc.length - 3);
+	crc = crc.substr(crc.length - 3);
 
 	$.notify({ message: "M," + ccc +"," + vvv + "," + crc + ",E" }, { type: "success" });
 
@@ -59,7 +69,6 @@ function startCharger() {
         async: true,
         success: function(data) {
             console.log(data);
-
             $("#com").addClass("d-none"); //.hide();
             errorNotify = false;
         }, error: function (data, textStatus, errorThrown) { //only for Windows (blocking UART)
@@ -86,6 +95,7 @@ function stopCharger() {
         	opStatus.empty();
             opStatus.append(st);
 
+            mainVoltage = 0;
         }, error: function (data, textStatus, errorThrown) { //only for Windows (blocking UART)
         	console.log(textStatus);
         	console.log(data);
@@ -170,4 +180,12 @@ function getChargerState() {
 	refreshTimer = setTimeout(function () {
         getChargerState();
     }, refreshSpeed);
+};
+
+function isInt(n){
+    return Number(n) === n && n % 1 === 0;
+};
+
+function isFloat(n){
+    return Number(n) === n && n % 1 !== 0;
 };
