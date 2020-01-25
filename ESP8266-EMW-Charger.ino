@@ -253,6 +253,9 @@ void NVRAMUpload()
 
   SPIFFS.remove("/data.txt");
 
+  WiFi.disconnect(true);  //Erases SSID/password
+  //ESP.eraseConfig();
+  
   delay(4000);
   ESP.restart();
 }
@@ -260,7 +263,7 @@ void NVRAMUpload()
 void NVRAM_Erase()
 {
   for (uint16_t i = 0 ; i < EEPROM.length() ; i++) {
-    EEPROM.write(i, 0);
+    EEPROM.write(i, 255);
   }
 }
 
