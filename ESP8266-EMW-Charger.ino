@@ -1,20 +1,14 @@
-#include <RemoteDebug.h>
 #include <FS.h>
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 //#include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
-#define SPIFFS_ALIGNED_OBJECT_INDEX_TABLES 1
 #define LED_BUILTIN 2 //GPIO1=Olimex, GPIO2=ESP-12/WeMos(D4)
 #define FILE_APPEND "a"
 
-RemoteDebug Debug;
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer updater;
-File fsUpload;
 
 int ACCESS_POINT_MODE = 0;
 char ACCESS_POINT_SSID[] = "Charger";
@@ -108,51 +102,6 @@ void setup()
     //Serial.println(WiFi.localIP());
   }
 
-  //===================
-  //Arduino OTA Updater
-  //===================
-  /*
-    Port defaults to 8266
-    ArduinoOTA.setPort(8266);
-
-    Hostname defaults to esp8266-[ChipID]
-    ArduinoOTA.setHostname("inverter");
-
-    No authentication by default
-    ArduinoOTA.setPassword("admin");
-
-    Password can be set with it's md5 value as well
-    MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
-    ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
-  */
-  ArduinoOTA.onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH) {
-      type = "sketch";
-    } else { // U_SPIFFS
-      type = "filesystem";
-      SPIFFS.end(); //unmount SPIFFS
-    }
-    //Serial.println("Start updating " + type);
-  });
-  /*
-    ArduinoOTA.onEnd([]() {
-    Debug.println("\nEnd");
-    });
-    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    DEBUG.printf("Progress: %u%%\r", (progress / (total / 100)));
-    });
-    ArduinoOTA.onError([](ota_error_t error) {
-    //DEBUG.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Debug.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Debug.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Debug.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Debug.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Debug.println("End Failed");
-    });
-  */
-  ArduinoOTA.begin();
-
   LOG_INTERVAL =  LOG_INTERVAL * 1000; //convert seconds to miliseconds
 
   //===============
@@ -197,10 +146,7 @@ void setup()
     else if (server.hasArg("command"))
     {
       String out = readSerial(server.arg("command"));
-      
       SPIFFS.remove("/data.txt");
-      
-      Debug.println(out);
       server.send(200, text_plain, out);
     }
   });
@@ -230,25 +176,11 @@ void setup()
     MDNS.addService("arduino", "tcp", 8266);
   */
 
-  //===================
-  //Remote Telnet Debug
-  //===================
-  Debug.begin("inverter"); // Telnet server
-  //Debug.setPassword(ACCESS_POINT_PASSWORD); // Telnet password
-  Debug.setResetCmdEnabled(true); // Enable the reset command
-  //Debug.showProfiler(true); // To show profiler - time between messages of Debug
-  //Debug.showColors(true); // Colors
-  //Debug.showDebugLevel(false); // To not show debug levels
-  //Debug.showTime(true); // To show time
-  //Debug.setSerialEnabled(true); // Serial echo
-
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop()
 {
-  Debug.handle();
-  ArduinoOTA.handle();
   server.handleClient();
 
   if (DATA_LOG == 0 || (millis() - syncTime) < LOG_INTERVAL) return;
@@ -352,8 +284,6 @@ String NVRAM_Read(uint32_t address)
 //=============
 String PHP(String line, int i)
 {
-  //Debug.println(line);
-
   if (line.indexOf("<?php") != -1) {
     line.replace("<?php", "");
     phpTag[i] = true;
@@ -374,15 +304,9 @@ String PHP(String line, int i)
       int e = line.lastIndexOf("\"");
       String include = line.substring(s, e);
 
-      //Debug.println("include:" + include);
-
       File f = SPIFFS.open("/" + include, "r");
-      if (!f)
+      if (f)
       {
-        //Debug.println(include + " (file not found)");
-
-      } else {
-
         String l;
         int x = i + 1;
         phpTag[x] = false;
@@ -413,16 +337,12 @@ String PHP(String line, int i)
 
 bool HTTPServer(String file)
 {
-  Debug.println((server.method() == HTTP_GET) ? "GET" : "POST");
-  Debug.println(file);
-
   if (SPIFFS.exists(file))
   {
     File f = SPIFFS.open(file, "r");
     if (f)
     {
       digitalWrite(LED_BUILTIN, HIGH);
-      //Debug.println(f.size());
 
       String contentType = getContentType(file);
 
@@ -497,14 +417,11 @@ String flushSerial()
 
 String readSerial(String cmd)
 {
-  //Debug.println(cmd);
-
   Serial.print(cmd);
   Serial.print("\n");
 
   return cmd;
 
   //String output = Serial.readStringUntil('\n');
-  //Debug.println(output);
   //return output
 }

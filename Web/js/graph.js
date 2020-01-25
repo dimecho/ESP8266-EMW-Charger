@@ -26,21 +26,20 @@ var graphDivision = 60;
 var streamTimer;
 var data = {};
 var options = {};
+var canvas;
 var chart;
-var ctxAxis;
 var ctx;
 var ctxFont = 12;
 var ctxFontColor = "black";
-var ctxGridColor = "#BEBEBE";
+var ctxGridColor = "#bebebe";
 
 $(document).ready(function () {
 
     graphTheme();
- 
-    var canvas = document.getElementById("chartCanvas");
-    ctx = canvas.getContext("2d");
-	ctxAxis = document.getElementById("chartAxis").getContext("2d");
 
+    canvas = document.getElementById("chartCanvas");
+    ctx = canvas.getContext("2d");
+	
     if (/Mobi|Android/i.test(navigator.userAgent)) {
         graphDivision = 40;
 
@@ -59,9 +58,9 @@ $(document).ready(function () {
 
     $.ajax("/nvram", {
         dataType: 'json',
-        success: function success(data) {
-            console.log(data);
-            bool_value = data["nvram5"] == "1" ? true : false;
+        success: function success(eeprom) {
+            console.log(eeprom);
+            bool_value = eeprom["nvram5"] == "1" ? true : false;
             if(bool_value == false) {
                 $.notify({ message: "Data Collection is Disabled in <a href='esp8266.php'>ESP8266</a>" }, { type: "warning" });
             }
@@ -73,7 +72,7 @@ function graphTheme() {
 
 	if(theme == ".slate") {
         ctxFontColor = "white";
-        ctxGridColor = "#707070";           
+        ctxGridColor = "#707070"; 
     }
 };
 
@@ -123,8 +122,26 @@ function newYAxis(key,id,options,side,visible) {
     //console.log(options);
 };
 
-function exportPNG() {
+function exportPNG(render) {
 
+    var plugin = {
+        afterRender: function(chart, options) {
+            exportPNG(true);
+            graphTheme();
+            initChart();
+            //chart.update();
+        }
+    };
+
+    if(theme == ".slate" && render == undefined) { //temporary initialize black and white chart
+        ctxFontColor = "black";
+        ctxGridColor = "#bebebe";
+        Chart.plugins.register(plugin);
+        initChart();
+        return;
+    }
+
+    Chart.plugins.unregister(plugin);
     var render = ctx.canvas.toDataURL("image/png", 1.0);
     var d = new Date();
 
@@ -237,6 +254,8 @@ function initChart() {
             yAxes: [] //Dynamically added
         }
     };
+
+    var scroll = 0;
 	
     $.ajax("data.txt", {
         async: false,
@@ -257,6 +276,10 @@ function initChart() {
                     }
                 }
             }
+            if(line.length > graphDivision) {
+                scroll = (line.length/graphDivision);
+                console.log(scroll);
+            }
         }, error: function (data, textStatus, errorThrown) {
             console.log(textStatus);
             console.log(data);
@@ -268,6 +291,8 @@ function initChart() {
 	options.scales.yAxes[0].ticks.suggestedMax = chart_charge_datasets[0].data.max()*1.1;
 	options.scales.yAxes[1].ticks.suggestedMax = chart_charge_datasets[1].data.max()*1.1;
 
+    if (chart) chart.destroy();
+
     chart = new Chart(ctx, {
         type: 'line',
         data: data,
@@ -275,7 +300,7 @@ function initChart() {
     });
     //chart.update();
 
-    $('.chartAreaWrapper2').width($('.chartAreaWrapper').width());
+    $('.chartAreaWrapper2').width($('.chartAreaWrapper').width() + chart.width * scroll);
 };
 
 function idDatasets(dataset) {
