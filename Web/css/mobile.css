@@ -12,22 +12,11 @@ button {
 input, select, option {
 	font-size: 2.5rem !important;
 }
-.alertify .ajs-dialog {
-	min-height:250px !important;
-	max-width:90% !important;
-}
-.fancybox-button {
-	height: 100px !important;
-	min-width: 100px !important;
-}
 .tooltip-inner .large.tooltip-inner {
 	font-size: 2.0rem !important;
 }
 .container {
 	max-width: 100% !important;
-}
-.fancybox-content {
-	width:98% !important;
 }
 .navbar {
 	padding: 1.0rem !important;

@@ -1,11 +1,9 @@
 #include <FS.h>
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
-//#include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
 #define LED_BUILTIN 2 //GPIO1=Olimex, GPIO2=ESP-12/WeMos(D4)
-#define FILE_APPEND "a"
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer updater;
@@ -17,6 +15,7 @@ int ACCESS_POINT_CHANNEL = 1;
 int ACCESS_POINT_HIDE = 0;
 int DATA_LOG = 0; //Enable data logger
 int LOG_INTERVAL = 5; //seconds between data collection and write to SPIFFS
+
 uint32_t syncTime = 0;
 bool phpTag[] = { false, false, false };
 const char text_html[] = "text/html";
@@ -46,11 +45,7 @@ void setup()
   //NVRAM type of Settings
   //======================
   EEPROM.begin(256);
-  /*
-    New ESP can cause "Fatal exception 9(LoadStoreAlignmentCause)" with uninitialized EEPROM
-    TODO: Find the solution - ESP.getResetReason()?
-  */
-  //Serial.println(ESP.getResetReason());
+
   int e = EEPROM.read(0);
   if (e == 255) { //if (NVRAM_Read(0) == "") {
     NVRAM_Erase();
@@ -84,7 +79,6 @@ void setup()
     IPAddress ip(192, 168, 4, 2);
     IPAddress gateway(192, 168, 4, 2);
     IPAddress subnet(255, 255, 255, 0);
-    IPAddress dns0(192, 168, 4, 2);
     WiFi.softAPConfig(ip, gateway, subnet);
     WiFi.softAP(ACCESS_POINT_SSID, ACCESS_POINT_PASSWORD, ACCESS_POINT_CHANNEL, ACCESS_POINT_HIDE);
     //Serial.println(WiFi.softAPIP());
@@ -168,17 +162,6 @@ void setup()
   });
   server.begin();
 
-  //==========
-  //DNS Server
-  //==========
-  /* http://inverter.local */
-  /*
-    MDNS.begin("inverter");
-    MDNS.addService("http", "tcp", 80);
-    MDNS.addService("telnet", "tcp", 23);
-    MDNS.addService("arduino", "tcp", 8266);
-  */
-
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
@@ -197,7 +180,7 @@ void loop()
 
     if (fs_info.usedBytes < fs_info.totalBytes)
     {
-      File file = SPIFFS.open("/data.txt", FILE_APPEND);
+      File file = SPIFFS.open("/data.txt", "a");
       file.print(output);
       file.close();
     }
@@ -387,18 +370,14 @@ String getContentType(String filename)
 {
   if (server.hasArg("download")) return "application/octet-stream";
   else if (filename.endsWith(".php")) return text_html;
-  else if (filename.endsWith(".htm")) return text_html;
-  else if (filename.endsWith(".html")) return text_html;
   else if (filename.endsWith(".css")) return "text/css";
   else if (filename.endsWith(".js")) return "application/javascript";
   else if (filename.endsWith(".json")) return text_json;
   else if (filename.endsWith(".png")) return "image/png";
   else if (filename.endsWith(".jpg")) return "image/jpeg";
-  else if (filename.endsWith(".ico")) return "image/x-icon";
-  else if (filename.endsWith(".svg")) return "image/svg+xml";
-  else if (filename.endsWith(".pdf")) return "application/x-pdf";
-  else if (filename.endsWith(".zip")) return "application/x-zip";
-  else if (filename.endsWith(".csv")) return "text/csv";
+  else if (filename.endsWith(".ttf")) return "font/ttf";
+  else if (filename.endsWith(".woff")) return "font/woff";
+  else if (filename.endsWith(".woff2")) return "font/woff2";
   return text_plain;
 }
 
