@@ -3,7 +3,7 @@
 #==============
 #Copy Files
 #==============
-rmdir ./spiffs
+rm -rf ./spiffs
 cp -rf  ./Web ./spiffs
 rm ./spiffs/img/screenshot.png
 
