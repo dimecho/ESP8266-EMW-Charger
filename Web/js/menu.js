@@ -178,14 +178,11 @@ function buildMenu() {
             }
 			wrap.append(div);
 
-            var col = $("<div>", { class: "spinner-grow spinner-grow-sm text-muted d-none", id: "loader-status" }); //.hide();
-            wrap.append(col);
-
             var col = $("<div>", { class: "col-auto mr-auto mb-auto mt-auto", id: "opStatus" });
 			wrap.append(col);
 
             var col = $("<div>", { class: "col-auto mb-auto mt-auto" });
-            var theme_icon = $("<i>", { class: "d-none d-md-block icons icon-status icon-day-and-night text-dark", "data-toggle": "tooltip", "data-html": "true" });
+            var theme_icon = $("<i>", { class: "icons icon-theme icon-day-and-night text-dark", "data-toggle": "tooltip", "data-html": "true" });
             theme_icon.click(function() {
                 if(theme == ".slate") {
                     theme = "";
@@ -250,7 +247,7 @@ function setTheme() {
     }else{
         $(".icon-day-and-night").attr("data-original-title", "<h6 class='text-white'>Dark Theme</h6>");
     }
-    switchTheme("i.icon-status","text-white","text-dark");
+    switchTheme("i.icon-theme","text-white","text-dark");
     switchTheme("div","navbar-dark","navbar-light");
     switchTheme("div","bg-primary","bg-light");
     switchTheme("div","text-white","text-dark");
