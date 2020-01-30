@@ -40,6 +40,30 @@
 									</div>
 								</fieldset>
 								<div class="form-group">
+									<label for="WiFiPhyMode">Physical</label>
+									<div class="input-group">
+										<div class="input-group-addon"><i class="icons icon-wifi p-3"></i></div>
+										<select id="WiFiPhyMode" class="form-control" name="WiFiPhyMode">
+											<option value="1">802.11 b</option>
+											<option value="2">802.11 g</option>
+											<option value="3">802.11 n</option>
+										</select>
+									</div>
+								</div>
+								<div class="form-group">
+									<div class="input-group">
+										<div class="input-group-addon"><i class="icons icon-power p-3"></i></div>
+										<select id="WiFiPower" class="form-control" name="WiFiPower">
+											<option value="1">1 dbm</option>
+											<option value="2">2 dbm</option>
+											<option value="3">3 dbm</option>
+											<option value="5">5 dbm</option>
+											<option value="10">10 dbm</option>
+											<option value="20">20 dbm</option>
+										</select>
+									</div>
+								</div>
+								<div class="form-group">
 									<label for="WiFiChannel">Channel</label>
 									<div class="input-group">
 										<div class="input-group-addon"><i class="icons icon-graph-bar p-3"></i></div>
@@ -79,7 +103,7 @@
 								    	<input type="password" id="WiFiPasswordConfirm" name="WiFiPasswordConfirm" class="form-control" placeholder="Password Confirm">
 									</div>
 								</div>
-								<div class="form-group">
+								<fieldset class="form-group">
 									<label for="EnableLOGCheckbox">Data Logger</label>
 									<div class="form-check">
 									  <label class="form-check-label">
@@ -91,7 +115,7 @@
 										<div class="input-group-addon"><i class="icons icon-puzzle p-3"></i></div>
 								    	<input type="text" id="EnableLOGInterval" name="EnableLOGInterval" class="form-control" placeholder="Log Interval (seconds)">
 									</div>
-								</div>
+								</fieldset>
 								<center><button type="submit" class="btn btn-success"><i class="icons icon-ok"></i> Save</button></center>
                             </form>
                         </td>

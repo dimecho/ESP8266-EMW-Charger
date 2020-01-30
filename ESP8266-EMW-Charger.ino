@@ -8,6 +8,8 @@
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer updater;
 
+int WIFI_PHY_MODE = 1; //WIFI_PHY_MODE_11B = 1, WIFI_PHY_MODE_11G = 2, WIFI_PHY_MODE_11N = 3
+int WIFI_PHY_POWER = 20; //Max = 20.5dbm
 int ACCESS_POINT_MODE = 0;
 char ACCESS_POINT_SSID[] = "Charger";
 char ACCESS_POINT_PASSWORD[] = "charger123";
@@ -44,37 +46,43 @@ void setup()
   //======================
   //NVRAM type of Settings
   //======================
-  EEPROM.begin(256);
-
+  EEPROM.begin(512);
+  
   int e = EEPROM.read(0);
   if (e == 255) { //if (NVRAM_Read(0) == "") {
     NVRAM_Erase();
     NVRAM_Write(0, String(ACCESS_POINT_MODE));
     NVRAM_Write(1, String(ACCESS_POINT_HIDE));
-    NVRAM_Write(2, String(ACCESS_POINT_CHANNEL));
-    NVRAM_Write(3, ACCESS_POINT_SSID);
-    NVRAM_Write(4, ACCESS_POINT_PASSWORD);
-    NVRAM_Write(5, String(DATA_LOG));
-    NVRAM_Write(6, String(LOG_INTERVAL));
+    NVRAM_Write(2, String(WIFI_PHY_MODE));
+    NVRAM_Write(3, String(WIFI_PHY_POWER));
+    NVRAM_Write(4, String(ACCESS_POINT_CHANNEL));
+    NVRAM_Write(5, ACCESS_POINT_SSID);
+    NVRAM_Write(6, ACCESS_POINT_PASSWORD);
+    NVRAM_Write(7, String(DATA_LOG));
+    NVRAM_Write(8, String(LOG_INTERVAL));
     SPIFFS.format();
   } else {
     ACCESS_POINT_MODE = NVRAM_Read(0).toInt();
     ACCESS_POINT_HIDE = NVRAM_Read(1).toInt();
-    ACCESS_POINT_CHANNEL = NVRAM_Read(2).toInt();
-    String s = NVRAM_Read(3);
+    WIFI_PHY_MODE = NVRAM_Read(2).toInt();
+    WIFI_PHY_POWER = NVRAM_Read(3).toInt();
+    ACCESS_POINT_CHANNEL = NVRAM_Read(4).toInt();
+    String s = NVRAM_Read(5);
     s.toCharArray(ACCESS_POINT_SSID, s.length() + 1);
-    String p = NVRAM_Read(4);
+    String p = NVRAM_Read(6);
     p.toCharArray(ACCESS_POINT_PASSWORD, p.length() + 1);
-    DATA_LOG = NVRAM_Read(5).toInt();
-    LOG_INTERVAL = NVRAM_Read(6).toInt();
+    DATA_LOG = NVRAM_Read(7).toInt();
+    LOG_INTERVAL = NVRAM_Read(8).toInt();
   }
   //EEPROM.end();
+
+  WiFi.setPhyMode((WiFiPhyMode_t)WIFI_PHY_MODE);
+  WiFi.setOutputPower(WIFI_PHY_POWER);
 
   if (ACCESS_POINT_MODE == 0) {
     //=====================
     //WiFi Access Point Mode
     //=====================
-    WiFi.setPhyMode(WIFI_PHY_MODE_11B); // WIFI_PHY_MODE_11G / WIFI_PHY_MODE_11N
     WiFi.mode(WIFI_AP);
     IPAddress ip(192, 168, 4, 2);
     IPAddress gateway(192, 168, 4, 2);
@@ -193,13 +201,13 @@ void loop()
 void NVRAM()
 {
   String out = "{\n";
-  for (uint8_t i = 0; i <= 3; i++) {
+  for (uint8_t i = 0; i <= 5; i++) {
     out += "\t\"nvram" + String(i) + "\": \"" + NVRAM_Read(i) + "\",\n";
   }
 
-  //skip plaintext password (4)
+  //skip plaintext password (6)
 
-  for (uint8_t i = 5; i <= 6; i++) {
+  for (uint8_t i = 7; i <= 8; i++) {
     out += "\t\"nvram" + String(i) + "\": \"" + NVRAM_Read(i) + "\",\n";
   }
 
@@ -215,15 +223,15 @@ void NVRAMUpload()
 
   String out = "<pre>";
 
-  for (uint8_t i = 0; i <= 4; i++) {
+  for (uint8_t i = 0; i <= 6; i++) {
     out += server.argName(i) + ": ";
     NVRAM_Write(i, server.arg(i));
     out += NVRAM_Read(i) + "\n";
   }
 
-  //skip confirm password (5)
+  //skip confirm password (7)
 
-  for (uint8_t i = 6; i <= 7; i++) {
+  for (uint8_t i = 8; i <= 9; i++) {
     out += server.argName(i) + ": ";
     NVRAM_Write(i - 1, server.arg(i));
     out += NVRAM_Read(i - 1) + "\n";
@@ -238,7 +246,7 @@ void NVRAMUpload()
 
   WiFi.disconnect(true);  //Erases SSID/password
   //ESP.eraseConfig();
-  
+
   delay(4000);
   ESP.restart();
 }

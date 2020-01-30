@@ -7,46 +7,6 @@ rm -rf ./spiffs
 cp -rf  ./Web ./spiffs
 rm ./spiffs/img/screenshot.png
 
-#======================
-#Correct long filenames
-#======================
-export LC_CTYPE=C
-export LANG=C
-for f in $(find spiffs -type f -name '*.*'); do
-    
-    f="/"${f#"spiffs/"} #remove path folder name
-    o=$(basename "$f")
-    o_size=${#f} #get path length
-
-    #SPIFFS maximum file name of 32 bytes
-    if [ $o_size -ge 32 ]; then
-        d=$(dirname "$f")
-        d_size=${#d}
-        n=$(basename "$f")
-        e="${o##*.}" # extention
-        e_size=${#e}
-        n="${n%.*}" # without extention
-        n=${n:0:(32 - $d_size - $e_size - 3)}
-
-        fe="$n.$e"
-        nn="$d/$n.$e"
-        nn_size=${#nn}
-
-        echo "$nn"
-        #echo "$o - $n"
-        echo "$o_size:$nn_size"
-
-        #================
-        #Find and replace
-        #================
-        for ff in $(find ./spiffs -type f -name '*.php' -o -name '*.js' -o -name '*.json' -o -name '*.css'); do
-            sed -i '' 's/'"$o"'/'"$fe"'/g' "$ff"
-        done
-
-        mv -f "spiffs/$f" "spiffs/$nn"
-    fi
-done
-
 #================
 #Clean PHP
 #================

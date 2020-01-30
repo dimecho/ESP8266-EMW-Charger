@@ -40,14 +40,17 @@ $(document).ready(function() {
             var bool_value = data["nvram1"] == "1" ? true : false;
             $("#WiFiHidden").val(data["nvram1"]);
             $("#WiFiHiddenCheckbox").prop("checked", bool_value);
-            $("#WiFiChannel").val(data["nvram2"]);
-            $("#WiFiSSID").val(data["nvram3"]);
+            
+            $("#WiFiPhyMode").val(data["nvram2"]);
+            $("#WiFiPower").val(data["nvram3"]);
+            $("#WiFiChannel").val(data["nvram4"]);
+            $("#WiFiSSID").val(data["nvram5"]);
 
-            bool_value = data["nvram5"] == "1" ? true : false;
-            $("#EnableLOG").val(data["nvram5"]);
+            bool_value = data["nvram7"] == "1" ? true : false;
+            $("#EnableLOG").val(data["nvram7"]);
             $("#EnableLOGCheckbox").prop("checked", bool_value);
 
-            $("#EnableLOGInterval").val(data["nvram6"]);
+            $("#EnableLOGInterval").val(data["nvram8"]);
             $(".spinner-border").addClass("d-none"); //.hide();
             $("#parameters").removeClass("d-none"); //.show();
         }

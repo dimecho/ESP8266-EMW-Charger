@@ -60,8 +60,7 @@ $(document).ready(function () {
         dataType: 'json',
         success: function success(eeprom) {
             console.log(eeprom);
-            bool_value = eeprom["nvram5"] == "1" ? true : false;
-            if(bool_value == false) {
+            if(eeprom["nvram7"] != "1") {
                 $.notify({ message: "Data Collection is Disabled in <a href='esp8266.php'>ESP8266</a>" }, { type: "warning" });
             }
         }
