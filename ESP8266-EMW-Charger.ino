@@ -9,7 +9,7 @@ ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer updater;
 
 int WIFI_PHY_MODE = 1; //WIFI_PHY_MODE_11B = 1, WIFI_PHY_MODE_11G = 2, WIFI_PHY_MODE_11N = 3
-int WIFI_PHY_POWER = 20; //Max = 20.5dbm
+float WIFI_PHY_POWER = 20.5; //Max = 20.5dbm
 int ACCESS_POINT_MODE = 0;
 char ACCESS_POINT_SSID[] = "Charger";
 char ACCESS_POINT_PASSWORD[] = "charger123";
@@ -65,7 +65,7 @@ void setup()
     ACCESS_POINT_MODE = NVRAM_Read(0).toInt();
     ACCESS_POINT_HIDE = NVRAM_Read(1).toInt();
     WIFI_PHY_MODE = NVRAM_Read(2).toInt();
-    WIFI_PHY_POWER = NVRAM_Read(3).toInt();
+    WIFI_PHY_POWER = NVRAM_Read(3).toFloat();
     ACCESS_POINT_CHANNEL = NVRAM_Read(4).toInt();
     String s = NVRAM_Read(5);
     s.toCharArray(ACCESS_POINT_SSID, s.length() + 1);
