@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <script>
+        	function handleEvent(e) {
+			    console.log(e);
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", "/format");
+                xhr.send();
+                alert("File System not compressed! Please flash SPIFFS binary.");
+                window.location.href = "/update";
+			}
+			function addListeners(xhr) {
+			    xhr.addEventListener('error', handleEvent);
+			}
+            var xhr = new XMLHttpRequest();
+            addListeners(xhr);
+            xhr.open("GET", "js/menu.js");
+            xhr.send();
+        </script>
         <?php include "header.php" ?>
         <link rel="stylesheet" type="text/css" href="css/ion.rangeSlider.css" />
         <script src="js/ion.rangeSlider.js"></script>

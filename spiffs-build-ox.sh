@@ -19,4 +19,4 @@ for f in $(find spiffs -type f -name '*.*' ! -name '*.php'); do
     mv "$f.gz" "$f"
 done
 
-./tools/mkspiffs -c ./spiffs/ -b 8192 -p 256 -s 600000 flash-spiffs.bin
+./tools/mkspiffs -c ./spiffs/ -b 8192 -p 256 -s 500000 flash-spiffs.bin
