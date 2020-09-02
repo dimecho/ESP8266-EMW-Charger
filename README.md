@@ -10,7 +10,7 @@ A simple web interface with UART control based on [Remote Control Protocols for 
 
 ## Download
 
-![ESP8266](Web/img/esp8266.png?raw=true) [Download for ESP8266](../../releases/download/1.0/ESP8266-EMW-Charger.zip)
+[Download for ESP8266](../../releases/download/1.0/ESP8266-EMW-Charger.zip)
 
 ## Connect
 
