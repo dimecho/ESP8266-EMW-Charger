@@ -1,14 +1,14 @@
 #==============
 #Copy Files
 #==============
-Remove-Item -Recurse -Force .\spiffs -ErrorAction SilentlyContinue
-Copy-Item -Path .\Web -Recurse -Destination .\spiffs -Container
-Remove-Item .\spiffs\img\screenshot.png
+Remove-Item -Recurse -Force .\data -ErrorAction SilentlyContinue
+Copy-Item -Path .\Web -Recurse -Destination .\data -Container
+Remove-Item .\data\img\screenshot.png
 
 #======================
 #Correct long filenames
 #======================
-Get-ChildItem .\spiffs -Recurse -Filter *.* | 
+Get-ChildItem .\data -Recurse -Filter *.* | 
 Foreach-Object {
 	if (-Not (Test-Path $_.FullName -PathType Container)) {
 		if($_.Name.length -gt 12){
@@ -23,7 +23,7 @@ Foreach-Object {
 
 			Move-Item $_.FullName -Destination $shortPath
 
-			Get-ChildItem .\spiffs -Recurse -Include *.php,*.css,*.js,*.json | 
+			Get-ChildItem .\data -Recurse -Include *.php,*.css,*.js,*.json | 
 			Foreach-Object {
 				if (-Not (Test-Path $_.FullName -PathType Container)) {
                     try {
@@ -38,7 +38,7 @@ Foreach-Object {
 #==============
 #Compress Files
 #==============
-Get-ChildItem .\spiffs -Recurse -Exclude *.php -Filter *.* | 
+Get-ChildItem .\data -Recurse -Exclude *.php -Filter *.* | 
 Foreach-Object {
     if (-Not (Test-Path $_.FullName -PathType Container)) {
         Start-Process .\tools\gzip.exe -ArgumentList $_.FullName -NoNewWindow -Wait
@@ -49,5 +49,4 @@ Foreach-Object {
 #================
 #Find Folder Size
 #================
-#Start-Process .\tools\mkspiffs.exe -ArgumentList "-c .\spiffs -b 8192 -p 256 -s 643072 flash-spiffs.bin" -NoNewWindow -PassThru -Wait
-Start-Process .\tools\mkspiffs.exe -ArgumentList "-c .\spiffs -b 8192 -p 256 -s 500000 flash-spiffs.bin" -NoNewWindow -PassThru -Wait
+Start-Process .\tools\mkspiffs.exe -ArgumentList "-c .\data -b 8192 -p 256 -s 480000 flash-spiffs.bin" -NoNewWindow -PassThru -Wait

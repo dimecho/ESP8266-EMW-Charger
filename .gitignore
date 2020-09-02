@@ -1,4 +1,4 @@
 .DS_Store
 *.bin
-spiffs/*
+data/*
 tools/mkspiffs

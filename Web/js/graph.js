@@ -33,8 +33,8 @@ var ctxFont = 12;
 var ctxFontColor = "black";
 var ctxGridColor = "#bebebe";
 
-$(document).ready(function () {
-
+document.addEventListener("DOMContentLoaded", function(event)
+{
     graphTheme();
 
     canvas = document.getElementById("chartCanvas");
@@ -56,15 +56,19 @@ $(document).ready(function () {
 
     initChart();
 
-    $.ajax("/nvram", {
-        dataType: 'json',
-        success: function success(eeprom) {
-            console.log(eeprom);
-            if(eeprom["nvram7"] != "1") {
+    var nvram = new XMLHttpRequest();
+    nvram.responseType = 'json';
+    nvram.onload = function() {
+        if (nvram.status == 200) {
+            var js = nvram.response;
+            titleVersion(js['nvram'][0]);
+            if(js["nvram"][7] != "1") {
                 $.notify({ message: "Data Collection is Disabled in <a href='esp8266.php'>ESP8266</a>" }, { type: "warning" });
             }
         }
-    });
+    };
+    nvram.open('GET', '/nvram', true);
+    nvram.send();
 });
 
 function graphTheme() {
@@ -255,35 +259,40 @@ function initChart() {
     };
 
     var scroll = 0;
-	
-    $.ajax("data.txt", {
-        async: false,
-        success: function success(logs) {
-            var line = logs.split('\n');
 
-            data.labels = initTimeAxis(line.length);
+        var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == XMLHttpRequest.DONE) {
+           if (xhr.status == 200) {
+                var logs = xhr.responseText;
 
-            for(var i = 0; i < line.length; i++) {
-                var s = line[i].split(',');
-                for(var x = 0; x < s.length; x++) {
-                    if(s[x].indexOf("V") != -1) {
-                        var v = parseInt(s[x].replace("V", ""));
-                        chart_charge_datasets[0].data.push(v);
-                    }else if(s[x].indexOf("C") != -1) {
-                        var v = parseFloat(s[x].replace("C", ""))/10;
-                        chart_charge_datasets[1].data.push(v);
+                var line = logs.split('\n');
+                data.labels = initTimeAxis(line.length);
+
+                for(var i = 0; i < line.length; i++) {
+                    var s = line[i].split(',');
+                    for(var x = 0; x < s.length; x++) {
+                        if(s[x].indexOf("V") != -1) {
+                            var v = parseInt(s[x].replace("V", ""));
+                            chart_charge_datasets[0].data.push(v);
+                        }else if(s[x].indexOf("C") != -1) {
+                            var v = parseFloat(s[x].replace("C", ""))/10;
+                            chart_charge_datasets[1].data.push(v);
+                        }
                     }
                 }
+                if(line.length > graphDivision) {
+                    scroll = (line.length/graphDivision);
+                    console.log(scroll);
+                }
+            }else{
+                console.log(xhr.status);
+                console.log(xhr.responseText);
             }
-            if(line.length > graphDivision) {
-                scroll = (line.length/graphDivision);
-                console.log(scroll);
-            }
-        }, error: function (data, textStatus, errorThrown) {
-            console.log(textStatus);
-            console.log(data);
         }
-    });
+    };
+    xhr.open('GET', '/data.txt', false);
+    xhr.send();
 
     addYAxis(chart_charge_datasets,options);
 

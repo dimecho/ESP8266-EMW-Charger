@@ -1,3 +1,5 @@
+<p align="center"><img src="Web/img/charger.png?raw=true"></p>
+
 # EMW Charger - ESP8266 Web Interface
 
 A simple web interface with UART control based on [Remote Control Protocols for EMotorWerks](https://leafdriveblog.files.wordpress.com/2020/01/emotorwerks-chargers-serial-protocol.pdf)
@@ -13,8 +15,8 @@ A simple web interface with UART control based on [Remote Control Protocols for 
 ## Connect
 
     SSID: Charger
-    Password: charger123
-    Interface: http://192.168.4.2
+    Password: (blank)
+    Interface: http://192.168.4.1
 
 ## Install
 
@@ -25,7 +27,7 @@ A simple web interface with UART control based on [Remote Control Protocols for 
 ## Update
 
     1) Connect to ESP8266 WiFi
-    2) Go to http://192.168.4.2/update
+    2) Go to http://192.168.4.1/update
 
 ## Build
 

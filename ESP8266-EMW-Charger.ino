@@ -3,7 +3,14 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
-#define LED_BUILTIN 2 //GPIO1=Olimex, GPIO2=ESP-12/WeMos(D4)
+
+#ifdef ARDUINO_MOD_WIFI_ESP8266
+#define LED_BUILTIN 1 //GPIO1=Olimex
+#else
+#define LED_BUILTIN 2 //GPIO2=ESP-12/WeMos(D4)
+#endif
+
+#define VERSION 1.01
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer updater;
@@ -12,13 +19,18 @@ int WIFI_PHY_MODE = 1; //WIFI_PHY_MODE_11B = 1, WIFI_PHY_MODE_11G = 2, WIFI_PHY_
 float WIFI_PHY_POWER = 20.5; //Max = 20.5dbm
 int ACCESS_POINT_MODE = 0;
 char ACCESS_POINT_SSID[] = "Charger";
-char ACCESS_POINT_PASSWORD[] = "charger123";
+char ACCESS_POINT_PASSWORD[] = "";
 int ACCESS_POINT_CHANNEL = 1;
 int ACCESS_POINT_HIDE = 0;
 int DATA_LOG = 0; //Enable data logger
 int LOG_INTERVAL = 5; //seconds between data collection and write to SPIFFS
+int TIMER_VOLTAGE = 0; //Stop Charger Voltage
+int TIMER_CURRENT = 0; //Limit Charger Current
+int TIMER_CRC = 0; //CRC for Voltage and Current
+int TIMER_DELAY = 0; //Automatic Timer (minutes)
 
 uint32_t syncTime = 0;
+uint32_t startTime = 0;
 bool phpTag[] = { false, false, false };
 const char text_html[] = "text/html";
 const char text_plain[] = "text/plain";
@@ -29,27 +41,15 @@ void setup()
   Serial.begin(19200, SERIAL_8N1);
   Serial.setTimeout(1000);
 
-  //Serial.setDebugOutput(true);
-
-  uint8_t timeout = 10;
-  while (!Serial && timeout > 0) {
-    Serial.swap(); //Swapped UART pins
-    delay(500);
-    timeout--;
-  }
-
-  //===========
-  //File system
-  //===========
   SPIFFS.begin();
 
   //======================
   //NVRAM type of Settings
   //======================
-  EEPROM.begin(512);
+  EEPROM.begin(1024);
   
   int e = EEPROM.read(0);
-  if (e == 255) { //if (NVRAM_Read(0) == "") {
+  if (e != 48 && e != 49) {
     NVRAM_Erase();
     NVRAM_Write(0, String(ACCESS_POINT_MODE));
     NVRAM_Write(1, String(ACCESS_POINT_HIDE));
@@ -60,6 +60,10 @@ void setup()
     NVRAM_Write(6, ACCESS_POINT_PASSWORD);
     NVRAM_Write(7, String(DATA_LOG));
     NVRAM_Write(8, String(LOG_INTERVAL));
+    NVRAM_Write(9, String(TIMER_VOLTAGE));
+    NVRAM_Write(10, String(TIMER_CURRENT));
+    NVRAM_Write(11, String(TIMER_CRC));
+    NVRAM_Write(12, String(TIMER_DELAY));
     SPIFFS.format();
   } else {
     ACCESS_POINT_MODE = NVRAM_Read(0).toInt();
@@ -73,6 +77,10 @@ void setup()
     p.toCharArray(ACCESS_POINT_PASSWORD, p.length() + 1);
     DATA_LOG = NVRAM_Read(7).toInt();
     LOG_INTERVAL = NVRAM_Read(8).toInt();
+    TIMER_VOLTAGE = NVRAM_Read(9).toInt();
+    TIMER_CURRENT = NVRAM_Read(10).toInt();
+    TIMER_CRC = NVRAM_Read(11).toInt();
+    TIMER_DELAY = NVRAM_Read(12).toInt();
   }
   //EEPROM.end();
 
@@ -84,8 +92,8 @@ void setup()
     //WiFi Access Point Mode
     //=====================
     WiFi.mode(WIFI_AP);
-    IPAddress ip(192, 168, 4, 2);
-    IPAddress gateway(192, 168, 4, 2);
+    IPAddress ip(192, 168, 4, 1);
+    IPAddress gateway(192, 168, 4, 1);
     IPAddress subnet(255, 255, 255, 0);
     WiFi.softAPConfig(ip, gateway, subnet);
     WiFi.softAP(ACCESS_POINT_SSID, ACCESS_POINT_PASSWORD, ACCESS_POINT_CHANNEL, ACCESS_POINT_HIDE);
@@ -95,9 +103,10 @@ void setup()
     //WiFi Client Mode
     //================
     WiFi.mode(WIFI_STA);
-    WiFi.persistent(false);
-    WiFi.disconnect(true);
     WiFi.begin(ACCESS_POINT_SSID, ACCESS_POINT_PASSWORD);  //Connect to the WiFi network
+
+     WiFi.setAutoConnect(false);
+     WiFi.setAutoReconnect(false);
     //WiFi.enableAP(0);
     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
       //Serial.println("Connection Failed! Rebooting...");
@@ -108,6 +117,7 @@ void setup()
   }
 
   LOG_INTERVAL =  LOG_INTERVAL * 1000; //convert seconds to miliseconds
+  TIMER_DELAY = TIMER_DELAY * 60 * 1000;
 
   //===============
   //Web OTA Updater
@@ -129,8 +139,24 @@ void setup()
     delay(500);
     ESP.restart();
   });
+  server.on("/start", HTTP_GET, []() {
+    startTime = millis();
+    server.send(200, text_plain, String(TIMER_DELAY));
+  });
+  server.on("/stop", HTTP_GET, []() {
+    startTime = 0;
+    server.send(200, text_plain, String(TIMER_DELAY));
+  });
   server.on("/nvram", HTTP_GET, []() {
-    NVRAM();
+    if (server.hasArg("offset")){
+        int i = server.arg("offset").toInt();
+        String v = server.arg("value");
+        NVRAM_Write(i, v);
+        server.send(200, text_plain, v);
+    }else{
+      String out = NVRAM(0, 12, 6);
+      server.send(200, text_json, out);
+    }
   });
   server.on("/nvram", HTTP_POST, []() {
     NVRAMUpload();
@@ -177,6 +203,19 @@ void loop()
 {
   server.handleClient();
 
+  if (startTime > 0 && (millis() - startTime) > TIMER_DELAY)
+  {
+    Serial.print("M,");
+    Serial.print(TIMER_CURRENT);
+    Serial.print(",");
+    Serial.print(TIMER_VOLTAGE);
+    Serial.print(",");
+    Serial.print(TIMER_CRC);
+    Serial.print(",E");
+    Serial.print("\n");
+    startTime = 0; //start only once
+  }
+
   if (DATA_LOG == 0 || (millis() - syncTime) < LOG_INTERVAL) return;
   syncTime = millis();
 
@@ -198,23 +237,24 @@ void loop()
 //=============
 // NVRAM CONFIG
 //=============
-void NVRAM()
+String NVRAM(uint8_t from, uint8_t to, uint8_t skip)
 {
   String out = "{\n";
-  for (uint8_t i = 0; i <= 5; i++) {
-    out += "\t\"nvram" + String(i) + "\": \"" + NVRAM_Read(i) + "\",\n";
+
+  out += "\t\"nvram\": [\"";
+  out += VERSION;
+  out += "\",";
+
+  for (uint8_t i = from; i <= to; i++) {
+    if (skip == -1 || i != skip) {
+      out += "\"" + NVRAM_Read(i) + "\",";
+    }
   }
 
-  //skip plaintext password (6)
+  out = out.substring(0, (out.length() - 1));
+  out += "]\n}";
 
-  for (uint8_t i = 7; i <= 8; i++) {
-    out += "\t\"nvram" + String(i) + "\": \"" + NVRAM_Read(i) + "\",\n";
-  }
-
-  out = out.substring(0, (out.length() - 2));
-  out += "\n}";
-
-  server.send(200, text_json, out);
+  return out;
 }
 
 void NVRAMUpload()
@@ -379,6 +419,7 @@ String getContentType(String filename)
   if (server.hasArg("download")) return "application/octet-stream";
   else if (filename.endsWith(".php")) return text_html;
   else if (filename.endsWith(".css")) return "text/css";
+  else if (filename.endsWith(".ico")) return "image/x-icon";
   else if (filename.endsWith(".js")) return "application/javascript";
   else if (filename.endsWith(".json")) return text_json;
   else if (filename.endsWith(".png")) return "image/png";

@@ -19,8 +19,10 @@
             xhr.send();
         </script>
         <?php include "header.php" ?>
-        <link rel="stylesheet" type="text/css" href="css/ion.rangeSlider.css" />
-        <script src="js/ion.rangeSlider.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/rangeslider.css" />
+        <link rel="stylesheet" type="text/css" href="css/roundslider.css" />
+        <script src="js/rangeslider.js"></script>
+        <script src="js/roundslider.js"></script>
         <script src="js/index.js"></script>
     </head>
     <body>
@@ -34,6 +36,9 @@
                         <div class="row p-2">
                             <div class="col">
                                 <button type="button" class="btn btn-danger" onclick="stopCharger()"><i class="icons icon-alert"></i> Stop Charger</button>
+                            </div>
+                            <div class="col">
+                                <button type="button" class="btn btn-success" onclick="startCharger()"><i class="icons icon-power"></i> Start Charger</button>
                             </div>
                         </div>
                     </div>
@@ -77,7 +82,7 @@
                         </div>
                         <div class="row p-2">
                             <div class="col">
-                                <button type="button" class="btn btn-success" onclick="startCharger()"><i class="icons icon-power"></i> Start Charger</button>
+                                <button type="button" class="btn btn-primary" onclick="timerCharger()"><i class="icons icon-speedometer"></i> Start Timer</button>
                             </div>
                         </div>
                     </div>
@@ -85,5 +90,22 @@
             </div>
         </div>
         <br/><br/>
+        <div class="modal" id="chargerTimerModal">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Start Timer</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <br/>
+                        <div class="mx-auto" id="timer-Slider"></div>
+                        <br/>
+                    </div>
+                </div>
+            </div>
+        </div>
     </body>
 </html>

@@ -4,20 +4,8 @@ loadTheme();
 var serialTimeout = 12000;
 var statusRefreshTimer;
 
-$(document).ready(function () {
-
-    var version = getCookie("version") || 0;
-    if (version == 0) {
-        $.ajax("version.txt", {
-            success: function(version) {
-				version = version.replace("\n", ".");
-                setCookie("version", version, 1);
-                titleVersion(version);
-            }
-        });
-    }
-    titleVersion(version);
-
+document.addEventListener('DOMContentLoaded', function(event)
+{
     buildMenu();
 });
 
@@ -40,29 +28,31 @@ function isFloat(n){
 
 function sendCommand(cmd) {
 
-    var e = ""
+    var e = ''
   
-    //$.ajax(serialWDomain + ":" + serialWeb + "/serial.php?command=" + cmd, {
-    $.ajax("serial.php?command=" + cmd, {
-        async: false,
-        cache: false,
-        timeout: serialTimeout,
-        success: function success(data) {
-            //console.log(cmd);
-            //console.log(data);
-            if(cmd == "json") {
-                try {
-                    e = JSON.parse(data);
-                } catch(ex) {
-                    e = {};
-                    $.notify({ message: ex + ":" + data }, { type: 'danger' });
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == XMLHttpRequest.DONE) {
+           if (xhr.status == 200) {
+                var data = xhr.responseText;
+                //console.log(cmd);
+                //console.log(data);
+                if(cmd == 'json') {
+                    try {
+                        e = JSON.parse(data);
+                    } catch(ex) {
+                        e = {};
+                        $.notify({ message: ex + ':' + data }, { type: 'danger' });
+                    }
+                }else{
+                    e = data;
                 }
-            }else{
-                e = data;
             }
-        },
-        error: function error(xhr, textStatus, errorThrown) {}
-    });
+        }
+    };
+    xhr.open('GET', 'serial.php?command=' + cmd, false);
+    xhr.send();
+
     return e;
 };
 
@@ -74,11 +64,10 @@ function getJSONFloatValue(value, callback) {
     if(callback)
         sync = true;
 
-    //$.ajax(serialWDomain + ":" + serialWeb + "/serial.php?get=" + value, {
-    $.ajax("serial.php?get=" + value, {
-        async: sync,
-        timeout: serialTimeout,
-        success: function success(data) {
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function() {
+        if (xhr.status == 200) {
+            var data = xhr.responseText;
             //console.log(data);
             f = parseFloat(data);
             if(isNaN(f))
@@ -86,30 +75,35 @@ function getJSONFloatValue(value, callback) {
             if(callback)
                 callback(f);
         }
-    });
+    };
+    xhr.open('GET', 'serial.php?get=' + value, sync);
+    xhr.send();
+    
     //console.log(f);
     return f;
 };
 
 function buildMenu() {
 
-    var file = "js/menu.json";
+    var file = 'js/menu.json';
 
-    $.ajax(file, {
-        dataType: 'json',
-        success: function success(js) {
-
+    var xhr = new XMLHttpRequest();
+    xhr.responseType = 'json';
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == XMLHttpRequest.DONE) {
+           if (xhr.status == 200) {
+            var js = xhr.response;
             //console.log(js);
 
-            var nav = $("#mainMenu");
-            var wrap = $("<div>", { class: "container" }); // { class: "d-flex mx-auto" });
+            var nav = $('#mainMenu');
+            var wrap = $('<div>', { class: 'container' }); // { class: 'd-flex mx-auto' });
             
-            var button = $("<button>", { class: "navbar-toggler navbar-toggler-right", type: "button", "data-toggle":"collapse", "data-target": "#navbarResponsive", "aria-controls": "navbarResponsive", "aria-expanded": false, "aria-label": "Menu" });
-            var span = $("<span>", { class: "icons icon-menu" }); //navbar-toggler-icon" });
+            var button = $('<button>', { class: 'navbar-toggler navbar-toggler-right', type: 'button', 'data-toggle':'collapse', 'data-target': '#navbarResponsive', 'aria-controls': 'navbarResponsive', 'aria-expanded': false, 'aria-label': 'Menu' });
+            var span = $('<span>', { class: 'icons icon-menu' }); //navbar-toggler-icon' });
             button.append(span);
-			wrap.append(button);
+            wrap.append(button);
 
-			var div = $("<div>", { class: "collapse navbar-collapse", id:"navbarResponsive" });
+            var div = $('<div>', { class: 'collapse navbar-collapse', id:'navbarResponsive' });
 
             for(var k in js.menu)
             {
@@ -119,24 +113,24 @@ function buildMenu() {
                 if(js.menu[k].id == undefined)
                     continue;
 
-                var ul = $("<ul>", { class: "navbar-nav" });
-                var li = $("<li>", { class: "nav-item" });
-                var a = $("<a>", { class: "nav-link", href: "#" });
-                var _i = $("<i>", { class: "icons " + js.menu[k].icon });
+                var ul = $('<ul>', { class: 'navbar-nav' });
+                var li = $('<li>', { class: 'nav-item' });
+                var a = $('<a>', { class: 'nav-link', href: '#' });
+                var _i = $('<i>', { class: 'icons ' + js.menu[k].icon });
                 
                 a.append(_i);
-                a.append($("<b>").append(" " + js.menu[k].id));
+                a.append($('<b>').append(' ' + js.menu[k].id));
                 li.append(a);
                 
                 if(js.menu[k].dropdown)
                 {
-                    li.addClass("dropdown");
-                    a.addClass("dropdown-toggle");
-                    a.attr("data-toggle","dropdown");
-                    a.attr("aria-haspopup",true);
-                    a.attr("aria-expanded",false);
+                    li.addClass('dropdown');
+                    a.addClass('dropdown-toggle');
+                    a.attr('data-toggle','dropdown');
+                    a.attr('aria-haspopup',true);
+                    a.attr('aria-expanded',false);
 
-                    var dropdown_menu = $("<div>", { class: "dropdown-menu" });
+                    var dropdown_menu = $('<div>', { class: 'dropdown-menu' });
 
                     for(var d in js.menu[k].dropdown)
                     {
@@ -146,50 +140,50 @@ function buildMenu() {
                         var onclick = js.menu[k].dropdown[d].onClick;
                         if(onclick == undefined) {
 
-                            var d = $("<div>", { class: "dropdown-divider" });
+                            var d = $('<div>', { class: 'dropdown-divider' });
                             dropdown_menu.append(d);
                         }else{
                             
-                            var dropdown_item = $("<a>", { class: "dropdown-item", href: "#" });
+                            var dropdown_item = $('<a>', { class: 'dropdown-item', href: '#' });
 
-                            var icon = $("<i>", { class: "icons " + js.menu[k].dropdown[d].icon });
-                            var item = $("<span>");
+                            var icon = $('<i>', { class: 'icons ' + js.menu[k].dropdown[d].icon });
+                            var item = $('<span>');
 
-                            if (onclick.indexOf("/") != -1 && onclick.indexOf("alertify") == -1)
+                            if (onclick.indexOf('/') != -1 && onclick.indexOf('alertify') == -1)
                             {
-                                dropdown_item.attr("href", onclick);
+                                dropdown_item.attr('href', onclick);
                             }else{
-                                dropdown_item.attr("onClick", onclick);
+                                dropdown_item.attr('onClick', onclick);
                             }
 
                             dropdown_item.append(icon);
-                            dropdown_item.append(item.append(" " + dropdown_id));
+                            dropdown_item.append(item.append(' ' + dropdown_id));
                             dropdown_menu.append(dropdown_item);
                         }
                     }
 
                     li.append(dropdown_menu);
                 }else{
-                    a.attr("href", js.menu[k].onClick);
+                    a.attr('href', js.menu[k].onClick);
                 }
 
                 ul.append(li);
                 div.append(ul);
             }
-			wrap.append(div);
+            wrap.append(div);
 
-            var col = $("<div>", { class: "col-auto mr-auto mb-auto mt-auto", id: "opStatus" });
-			wrap.append(col);
+            var col = $('<div>', { class: 'col-auto mr-auto mb-auto mt-auto', id: 'opStatus' });
+            wrap.append(col);
 
-            var col = $("<div>", { class: "col-auto mb-auto mt-auto" });
-            var theme_icon = $("<i>", { class: "icons icon-theme icon-day-and-night text-dark", "data-toggle": "tooltip", "data-html": "true" });
+            var col = $('<div>', { class: 'col-auto mb-auto mt-auto' });
+            var theme_icon = $('<i>', { class: 'icons icon-theme icon-day-and-night text-dark', 'data-toggle': 'tooltip', 'data-html': 'true' });
             theme_icon.click(function() {
-                if(theme == ".slate") {
-                    theme = "";
+                if(theme == '.slate') {
+                    theme = '';
                 }else{
-                    theme = ".slate";
+                    theme = '.slate';
                 }
-                setCookie("theme", theme, 1);
+                setCookie('theme', theme, 1);
                 location.reload();
                 //loadTheme();
                 //setTheme();
@@ -197,44 +191,48 @@ function buildMenu() {
             col.append(theme_icon);
             wrap.append(col);
 
-			nav.append(wrap);
+            nav.append(wrap);
 
             setTheme();
 
-            $('[data-toggle="tooltip"]').tooltip();
+            //$('[data-toggle='tooltip']').tooltip();
 
             //Build the Menu before we get frozen with serial.php
             var path = window.location.pathname;
-            var page = path.split("/").pop();
-            if(page == "" || page == "index.php") {
+            var page = path.split('/').pop();
+            if(page == '' || page == 'index.php') {
                 setTimeout(function () { //wait for icons to load
                     initializeSerial();
                 }, 1000);
             }
+           }
         }
-    });
+    };
+    xhr.open('GET', file, true);
+    xhr.send();
+
 };
 
 function detectTheme()
 {
-    var t = getCookie("theme");
+    var t = getCookie('theme');
     if(t == undefined) {
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            return ".slate";
+            return '.slate';
         }else{
-            return ""
+            return '';
         }
     }
     return t;
 };
 
 function switchTheme(element,dark,light) {
-     if(theme == "") {
-        var e = $(element + "." + dark);
+     if(theme == '') {
+        var e = $(element + '.' + dark);
         e.removeClass(dark);
         e.addClass(light);
     }else{
-        var e = $(element + "." + light);
+        var e = $(element + '.' + light);
         e.removeClass(light);
         e.addClass(dark);
     }
@@ -242,23 +240,23 @@ function switchTheme(element,dark,light) {
 
 function setTheme() {
     //loadTheme();
-    if(theme == ".slate") {
-        $(".icon-day-and-night").attr("data-original-title", "<h6 class='text-white'>Light Theme</h6>");
+    if(theme == '.slate') {
+        $('.icon-day-and-night').attr('data-original-title', '<h6 class="text-white">Light Theme</h6>');
     }else{
-        $(".icon-day-and-night").attr("data-original-title", "<h6 class='text-white'>Dark Theme</h6>");
+        $('.icon-day-and-night').attr('data-original-title', '<h6 class="text-white">Dark Theme</h6>');
     }
-    switchTheme("i.icon-theme","text-white","text-dark");
-    switchTheme("div","navbar-dark","navbar-light");
-    switchTheme("div","bg-primary","bg-light");
-    switchTheme("div","text-white","text-dark");
-    switchTheme("table","bg-primary","bg-light");
+    switchTheme('i.icon-theme','text-white','text-dark');
+    switchTheme('div','navbar-dark','navbar-light');
+    switchTheme('div','bg-primary','bg-light');
+    switchTheme('div','text-white','text-dark');
+    switchTheme('table','bg-primary','bg-light');
 };
 
 function loadTheme() {
-    if(theme == ".slate") {
-        $('link[title="main"]').attr('href', "css/bootstrap.slate.css");
+    if(theme == '.slate') {
+        $('link[title="main"]').attr('href', 'css/bootstrap.slate.css');
     }else{
-        $('link[title="main"]').attr('href', "css/bootstrap.css");
+        $('link[title="main"]').attr('href', 'css/bootstrap.css');
     }
     if (/Mobi|Android/i.test(navigator.userAgent)) {
         $("head link[rel='stylesheet']").last().after("<link rel='stylesheet' href='css/mobile.css' type='text/css'>");
@@ -268,10 +266,10 @@ function loadTheme() {
 function deleteCookie(name, path, domain) {
 
   if(getCookie(name)) {
-    document.cookie = name + "=" +
-      ((path) ? ";path="+path:"")+
-      ((domain)?";domain="+domain:"") +
-      ";expires=Thu, 01 Jan 1970 00:00:01 GMT";
+    document.cookie = name + '=' +
+      ((path) ? ';path='+path:'')+
+      ((domain)?';domain='+domain:'') +
+      ';expires=Thu, 01 Jan 1970 00:00:01 GMT';
   }
 };
 
@@ -279,8 +277,8 @@ function setCookie(name, value, exdays) {
 
     var exdate = new Date();
     exdate.setDate(exdate.getDate() + exdays);
-    var c_value = escape(value) + (exdays == null ? "" : "; expires=" + exdate.toUTCString());
-    document.cookie = name + "=" + c_value;
+    var c_value = escape(value) + (exdays == null ? '' : '; expires=' + exdate.toUTCString());
+    document.cookie = name + '=' + c_value;
 };
 
 function getCookie(name) {
@@ -288,12 +286,12 @@ function getCookie(name) {
     var i,
         x,
         y,
-        ARRcookies = document.cookie.split(";");
+        ARRcookies = document.cookie.split(';');
 
     for (var i = 0; i < ARRcookies.length; i++) {
-        x = ARRcookies[i].substr(0, ARRcookies[i].indexOf("="));
-        y = ARRcookies[i].substr(ARRcookies[i].indexOf("=") + 1);
-        x = x.replace(/^\s+|\s+$/g, "");
+        x = ARRcookies[i].substr(0, ARRcookies[i].indexOf('='));
+        y = ARRcookies[i].substr(ARRcookies[i].indexOf('=') + 1);
+        x = x.replace(/^\s+|\s+$/g, '');
         if (x == name) {
             return unescape(y);
         }
