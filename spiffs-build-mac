@@ -24,7 +24,7 @@ if [ ! -f tools/mkspiffs ]; then
     cd ../
 fi
 
-for f in $(find data -type f -name '*.*' ! -name '*.php'); do
+for f in $(find data -type f -name '*.*'); do
     gzip "$f"
     mv "$f.gz" "$f"
 done

@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", function(event)
             var js = nvram.response;
             titleVersion(js['nvram'][0]);
             if(js["nvram"][7] != "1") {
-                $.notify({ message: "Data Collection is Disabled in <a href='esp8266.php'>ESP8266</a>" }, { type: "warning" });
+                $.notify({ message: "Data Collection is Disabled in <a href='esp8266.html'>ESP8266</a>" }, { type: "warning" });
             }
         }
     };

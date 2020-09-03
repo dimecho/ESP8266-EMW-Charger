@@ -2,14 +2,14 @@
     "menu": [{
         "id": "EMW Charger",
         "icon": "icon-plug",
-        "onClick": "/index.php"
+        "onClick": "/index.html"
     },{
         "id": "Graph",
         "icon": "icon-graph",
-        "onClick": "/graph.php"
+        "onClick": "/graph.html"
     },{
         "id": "ESP8266",
         "icon": "icon-chip",
-        "onClick": "/esp8266.php"
+        "onClick": "/esp8266.html"
     }]
 }

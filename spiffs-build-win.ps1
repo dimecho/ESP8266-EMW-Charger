@@ -38,7 +38,7 @@ Foreach-Object {
 #==============
 #Compress Files
 #==============
-Get-ChildItem .\data -Recurse -Exclude *.php -Filter *.* | 
+Get-ChildItem .\data -Recurse -Filter *.* | 
 Foreach-Object {
     if (-Not (Test-Path $_.FullName -PathType Container)) {
         Start-Process .\tools\gzip.exe -ArgumentList $_.FullName -NoNewWindow -Wait

@@ -16,7 +16,7 @@ ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer updater;
 
 int WIFI_PHY_MODE = 1; //WIFI_PHY_MODE_11B = 1, WIFI_PHY_MODE_11G = 2, WIFI_PHY_MODE_11N = 3
-float WIFI_PHY_POWER = 20.5; //Max = 20.5dbm
+double WIFI_PHY_POWER = 20.5; //Max = 20.5dbm
 int ACCESS_POINT_MODE = 0;
 char ACCESS_POINT_SSID[] = "Charger";
 char ACCESS_POINT_PASSWORD[] = "";
@@ -31,7 +31,7 @@ int TIMER_DELAY = 0; //Automatic Timer (minutes)
 
 uint32_t syncTime = 0;
 uint32_t startTime = 0;
-bool phpTag[] = { false, false, false };
+
 const char text_html[] = "text/html";
 const char text_plain[] = "text/plain";
 const char text_json[] = "application/json";
@@ -69,7 +69,7 @@ void setup()
     ACCESS_POINT_MODE = NVRAM_Read(0).toInt();
     ACCESS_POINT_HIDE = NVRAM_Read(1).toInt();
     WIFI_PHY_MODE = NVRAM_Read(2).toInt();
-    WIFI_PHY_POWER = NVRAM_Read(3).toFloat();
+    WIFI_PHY_POWER = NVRAM_Read(3).toDouble();
     ACCESS_POINT_CHANNEL = NVRAM_Read(4).toInt();
     String s = NVRAM_Read(5);
     s.toCharArray(ACCESS_POINT_SSID, s.length() + 1);
@@ -182,8 +182,8 @@ void setup()
     }
   });
   server.on("/", []() {
-    if (SPIFFS.exists("/index.php")) {
-      server.sendHeader("Location", "/index.php");
+    if (SPIFFS.exists("/index.html")) {
+      server.sendHeader("Location", "/index.html");
       server.send(303);
     } else {
       server.sendHeader("Refresh", "6; url=/update");
@@ -279,7 +279,7 @@ void NVRAMUpload()
   out += "\n...Rebooting";
   out += "</pre>";
 
-  server.sendHeader("Refresh", "8; url=/esp8266.php");
+  server.sendHeader("Refresh", "8; url=/esp8266.html");
   server.send(200, text_html, out);
 
   SPIFFS.remove("/data.txt");
@@ -316,62 +316,6 @@ String NVRAM_Read(uint32_t address)
   return String(arrayToStore);
 }
 
-//=============
-// PHP MINI
-//=============
-String PHP(String line, int i)
-{
-  if (line.indexOf("<?php") != -1) {
-    line.replace("<?php", "");
-    phpTag[i] = true;
-  } else if (line.indexOf("?>") != -1) {
-    line = "";
-    phpTag[i] = false;
-  }
-
-  if (phpTag[i] == true)
-  {
-    if (line.indexOf("include") != -1 ) {
-      //line.trim();
-      line.replace("'", "\"");
-      line.replace("(", "");
-      line.replace(")", "");
-      line.replace(";", "");
-      int s = line.indexOf("\"") + 1;
-      int e = line.lastIndexOf("\"");
-      String include = line.substring(s, e);
-
-      File f = SPIFFS.open("/" + include, "r");
-      if (f)
-      {
-        String l;
-        int x = i + 1;
-        phpTag[x] = false;
-
-        while (f.available()) {
-          l = f.readStringUntil('\n');
-          line += PHP(l, x);
-          //line += "\n";
-        }
-        f.close();
-      }
-
-      line.replace("include_once", "");
-      line.replace("include", "");
-      line.replace("\"" + include + "\"", "");
-      if (line.indexOf("?>") != -1) {
-        line.replace("?>", "");
-        phpTag[i] = false;
-      }
-
-    } else {
-      line = "";
-    }
-  }
-
-  return line;
-}
-
 bool HTTPServer(String file)
 {
   if (SPIFFS.exists(file))
@@ -383,19 +327,7 @@ bool HTTPServer(String file)
 
       String contentType = getContentType(file);
 
-      if (file.indexOf(".php") > 0) {
-
-        String response = "";
-        String l = "";
-        phpTag[0] = false;
-
-        while (f.available()) {
-          l = f.readStringUntil('\n');
-          response += PHP(l, 0);
-          //response += "\n";
-        }
-        server.send(200, contentType, response);
-      } else if (file.indexOf("data.txt") > 0) {
+      if (file.indexOf("data.txt") > 0) {
         server.streamFile(f, contentType);
       } else {
         server.sendHeader("Content-Encoding", "gzip");
@@ -417,7 +349,7 @@ bool HTTPServer(String file)
 String getContentType(String filename)
 {
   if (server.hasArg("download")) return "application/octet-stream";
-  else if (filename.endsWith(".php")) return text_html;
+  else if (filename.endsWith(".html")) return text_html;
   else if (filename.endsWith(".css")) return "text/css";
   else if (filename.endsWith(".ico")) return "image/x-icon";
   else if (filename.endsWith(".js")) return "application/javascript";
