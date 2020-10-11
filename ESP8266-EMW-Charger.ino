@@ -10,7 +10,9 @@
 #define LED_BUILTIN 2 //GPIO2=ESP-12/WeMos(D4)
 #endif
 
-#define VERSION 1.01
+#define VERSION     1.01
+#define DEBUG       false
+#define EEPROM_ID   0x3BDAB200 //Identify Sketch by EEPROM
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer updater;
@@ -47,40 +49,56 @@ void setup()
   //NVRAM type of Settings
   //======================
   EEPROM.begin(1024);
-  
-  int e = EEPROM.read(0);
-  if (e != 48 && e != 49) {
+  long e = NVRAM_Read(0).toInt();
+#if DEBUG
+  Serial.setDebugOutput(true);
+  Serial.println(e, HEX);
+#endif
+  if (e != EEPROM_ID) {
+    //Check for multiple Inverter SSIDs
+    uint8_t n = WiFi.scanNetworks();
+    if (n != 0) {
+      for (uint8_t i = 0; i < n; ++i) {
+        Serial.println(WiFi.SSID(i));
+        if (WiFi.SSID(i) == ACCESS_POINT_SSID) {
+          strcat(ACCESS_POINT_SSID, String("-" + i).c_str()); //avoid conflict
+          break;
+        }
+      }
+    }
     NVRAM_Erase();
-    NVRAM_Write(0, String(ACCESS_POINT_MODE));
-    NVRAM_Write(1, String(ACCESS_POINT_HIDE));
-    NVRAM_Write(2, String(WIFI_PHY_MODE));
-    NVRAM_Write(3, String(WIFI_PHY_POWER));
-    NVRAM_Write(4, String(ACCESS_POINT_CHANNEL));
-    NVRAM_Write(5, ACCESS_POINT_SSID);
-    NVRAM_Write(6, ACCESS_POINT_PASSWORD);
-    NVRAM_Write(7, String(DATA_LOG));
-    NVRAM_Write(8, String(LOG_INTERVAL));
-    NVRAM_Write(9, String(TIMER_VOLTAGE));
-    NVRAM_Write(10, String(TIMER_CURRENT));
-    NVRAM_Write(11, String(TIMER_CRC));
-    NVRAM_Write(12, String(TIMER_DELAY));
+    NVRAM_Write(0, String(EEPROM_ID));
+    NVRAM_Write(1, String(ACCESS_POINT_MODE));
+    NVRAM_Write(2, String(ACCESS_POINT_HIDE));
+    NVRAM_Write(3, String(WIFI_PHY_MODE));
+    NVRAM_Write(4, String(WIFI_PHY_POWER));
+    NVRAM_Write(5, String(ACCESS_POINT_CHANNEL));
+    NVRAM_Write(6, ACCESS_POINT_SSID);
+    NVRAM_Write(7, ACCESS_POINT_PASSWORD);
+    NVRAM_Write(8, String(DATA_LOG));
+    NVRAM_Write(9, String(LOG_INTERVAL));
+    NVRAM_Write(10, String(TIMER_VOLTAGE));
+    NVRAM_Write(11, String(TIMER_CURRENT));
+    NVRAM_Write(12, String(TIMER_CRC));
+    NVRAM_Write(13, String(TIMER_DELAY));
+
     SPIFFS.format();
   } else {
-    ACCESS_POINT_MODE = NVRAM_Read(0).toInt();
-    ACCESS_POINT_HIDE = NVRAM_Read(1).toInt();
-    WIFI_PHY_MODE = NVRAM_Read(2).toInt();
-    WIFI_PHY_POWER = NVRAM_Read(3).toDouble();
-    ACCESS_POINT_CHANNEL = NVRAM_Read(4).toInt();
-    String s = NVRAM_Read(5);
+    ACCESS_POINT_MODE = NVRAM_Read(1).toInt();
+    ACCESS_POINT_HIDE = NVRAM_Read(2).toInt();
+    WIFI_PHY_MODE = NVRAM_Read(3).toInt();
+    WIFI_PHY_POWER = NVRAM_Read(4).toDouble();
+    ACCESS_POINT_CHANNEL = NVRAM_Read(5).toInt();
+    String s = NVRAM_Read(6);
     s.toCharArray(ACCESS_POINT_SSID, s.length() + 1);
-    String p = NVRAM_Read(6);
+    String p = NVRAM_Read(7);
     p.toCharArray(ACCESS_POINT_PASSWORD, p.length() + 1);
-    DATA_LOG = NVRAM_Read(7).toInt();
-    LOG_INTERVAL = NVRAM_Read(8).toInt();
-    TIMER_VOLTAGE = NVRAM_Read(9).toInt();
-    TIMER_CURRENT = NVRAM_Read(10).toInt();
-    TIMER_CRC = NVRAM_Read(11).toInt();
-    TIMER_DELAY = NVRAM_Read(12).toInt();
+    DATA_LOG = NVRAM_Read(8).toInt();
+    LOG_INTERVAL = NVRAM_Read(9).toInt();
+    TIMER_VOLTAGE = NVRAM_Read(10).toInt();
+    TIMER_CURRENT = NVRAM_Read(11).toInt();
+    TIMER_CRC = NVRAM_Read(12).toInt();
+    TIMER_DELAY = NVRAM_Read(13).toInt();
   }
   //EEPROM.end();
 
@@ -105,8 +123,8 @@ void setup()
     WiFi.mode(WIFI_STA);
     WiFi.begin(ACCESS_POINT_SSID, ACCESS_POINT_PASSWORD);  //Connect to the WiFi network
 
-     WiFi.setAutoConnect(false);
-     WiFi.setAutoReconnect(false);
+    WiFi.setAutoConnect(false);
+    WiFi.setAutoReconnect(false);
     //WiFi.enableAP(0);
     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
       //Serial.println("Connection Failed! Rebooting...");
@@ -148,13 +166,13 @@ void setup()
     server.send(200, text_plain, String(TIMER_DELAY));
   });
   server.on("/nvram", HTTP_GET, []() {
-    if (server.hasArg("offset")){
-        int i = server.arg("offset").toInt();
-        String v = server.arg("value");
-        NVRAM_Write(i, v);
-        server.send(200, text_plain, v);
-    }else{
-      String out = NVRAM(0, 12, 6);
+    if (server.hasArg("offset")) {
+      int i = server.arg("offset").toInt();
+      String v = server.arg("value");
+      NVRAM_Write(i, v);
+      server.send(200, text_plain, v);
+    } else {
+      String out = NVRAM(1, 12, 7);
       server.send(200, text_json, out);
     }
   });
