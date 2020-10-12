@@ -49,4 +49,4 @@ Foreach-Object {
 #================
 #Find Folder Size
 #================
-Start-Process .\tools\mkspiffs.exe -ArgumentList "-c .\data -b 8192 -p 256 -s 480000 flash-spiffs.bin" -NoNewWindow -PassThru -Wait
+Start-Process .\tools\mkspiffs.exe -ArgumentList "-c .\data -b 8192 -p 256 -s 450000 flash-spiffs.bin" -NoNewWindow -PassThru -Wait

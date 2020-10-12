@@ -12,7 +12,7 @@
 
 #define VERSION     1.01
 #define DEBUG       false
-#define EEPROM_ID   0x3BDAB200 //Identify Sketch by EEPROM
+#define EEPROM_ID   0x3BDAB201 //Identify Sketch by EEPROM
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer updater;
@@ -29,10 +29,12 @@ int LOG_INTERVAL = 5; //seconds between data collection and write to SPIFFS
 int TIMER_VOLTAGE = 0; //Stop Charger Voltage
 int TIMER_CURRENT = 0; //Limit Charger Current
 int TIMER_CRC = 0; //CRC for Voltage and Current
-int TIMER_DELAY = 0; //Automatic Timer (minutes)
+int TIMER_DELAY = 0; //Delay Start Timer (minutes)
+int PLUG_DELAY = 0; //Plugin Auto Timer (minutes)
 
 uint32_t syncTime = 0;
 uint32_t startTime = 0;
+uint32_t plugTime = 0;
 
 const char text_html[] = "text/html";
 const char text_plain[] = "text/plain";
@@ -81,6 +83,7 @@ void setup()
     NVRAM_Write(11, String(TIMER_CURRENT));
     NVRAM_Write(12, String(TIMER_CRC));
     NVRAM_Write(13, String(TIMER_DELAY));
+    NVRAM_Write(14, String(PLUG_DELAY));
 
     SPIFFS.format();
   } else {
@@ -99,6 +102,7 @@ void setup()
     TIMER_CURRENT = NVRAM_Read(11).toInt();
     TIMER_CRC = NVRAM_Read(12).toInt();
     TIMER_DELAY = NVRAM_Read(13).toInt();
+    PLUG_DELAY = NVRAM_Read(14).toInt();
   }
   //EEPROM.end();
 
@@ -136,6 +140,7 @@ void setup()
 
   LOG_INTERVAL =  LOG_INTERVAL * 1000; //convert seconds to miliseconds
   TIMER_DELAY = TIMER_DELAY * 60 * 1000;
+  PLUG_DELAY = PLUG_DELAY * 60 * 1000;
 
   //===============
   //Web OTA Updater
@@ -158,7 +163,9 @@ void setup()
     ESP.restart();
   });
   server.on("/start", HTTP_GET, []() {
-    startTime = millis();
+    if (TIMER_DELAY > 0) {
+      startTime = millis();
+    }
     server.send(200, text_plain, String(TIMER_DELAY));
   });
   server.on("/stop", HTTP_GET, []() {
@@ -172,7 +179,7 @@ void setup()
       NVRAM_Write(i, v);
       server.send(200, text_plain, v);
     } else {
-      String out = NVRAM(1, 12, 7);
+      String out = NVRAM(1, 14, 7);
       server.send(200, text_json, out);
     }
   });
@@ -221,35 +228,50 @@ void loop()
 {
   server.handleClient();
 
-  if (startTime > 0 && (millis() - startTime) > TIMER_DELAY)
-  {
-    Serial.print("M,");
-    Serial.print(TIMER_CURRENT);
-    Serial.print(",");
-    Serial.print(TIMER_VOLTAGE);
-    Serial.print(",");
-    Serial.print(TIMER_CRC);
-    Serial.print(",E");
-    Serial.print("\n");
+  if (startTime > 0 && (millis() - startTime) > TIMER_DELAY) { //Manual Start Timer
+    chargerStart();
     startTime = 0; //start only once
+  } else if (plugTime > 0 && (millis() - plugTime) > PLUG_DELAY) { //Plug-in Start Timer
+    chargerStart();
+    plugTime = 0; //start only once
   }
 
-  if (DATA_LOG == 0 || (millis() - syncTime) < LOG_INTERVAL) return;
+  if ((millis() - syncTime) < LOG_INTERVAL) return;
   syncTime = millis();
 
   String output = flushSerial();
 
-  if (output.indexOf("D") != -1) { //Capture reports only
-    FSInfo fs_info;
-    SPIFFS.info(fs_info);
-
-    if (fs_info.usedBytes < fs_info.totalBytes)
-    {
-      File file = SPIFFS.open("/data.txt", "a");
-      file.print(output);
-      file.close();
+  if (output.indexOf("R") != -1) {
+    if (PLUG_DELAY > 0) {
+      plugTime = millis();
     }
   }
+
+  if (output.indexOf("D") != -1) { //Capture reports only
+    if (DATA_LOG > 0) {
+      FSInfo fs_info;
+      SPIFFS.info(fs_info);
+
+      if (fs_info.usedBytes < fs_info.totalBytes)
+      {
+        File file = SPIFFS.open("/data.txt", "a");
+        file.print(output);
+        file.close();
+      }
+    }
+  }
+}
+
+void chargerStart()
+{
+  Serial.print("M,");
+  Serial.print(TIMER_CURRENT);
+  Serial.print(",");
+  Serial.print(TIMER_VOLTAGE);
+  Serial.print(",");
+  Serial.print(TIMER_CRC);
+  Serial.print(",E");
+  Serial.print("\n");
 }
 
 //=============
@@ -346,8 +368,10 @@ bool HTTPServer(String file)
       String contentType = getContentType(file);
 
       if (file.indexOf("data.txt") > 0) {
+        server.sendHeader("Cache-Control", "no-store");
         server.streamFile(f, contentType);
       } else {
+        server.sendHeader("Cache-Control", "max-age=3600");
         server.sendHeader("Content-Encoding", "gzip");
         server.streamFile(f, contentType);
       }

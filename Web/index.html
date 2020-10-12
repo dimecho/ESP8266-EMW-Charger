@@ -26,7 +26,7 @@
         <link rel="stylesheet" type="text/css" href="css/rangeslider.css">
         <link rel="stylesheet" type="text/css" href="css/roundslider.css">
         <script src="js/bootstrap.js"></script>
-        <script src="js/jquery.slim.js"></script>
+        <script src="js/jquery.core.js"></script>
         <script src="js/menu.js"></script>
         <script src="js/bootstrap-notify.js"></script>
         <script src="js/rangeslider.js"></script>
@@ -50,50 +50,64 @@
                             </div>
                         </div>
                     </div>
-                    <br/><br/>
-                    <i class="d-none icons icon-com display-2 p-4" id="com"></i>
-                    <div class="d-none container table-active table-bordered" id="chargerStatus">
-                        <div class="row p-2">
-                            <div class="col text-dark" id="chargerValues">
-                                <div class="d-none spinner-border text-dark" id="loadValues"></div>
-                            </div>
-                        </div>
-                        <div class="row p-2">
-                            <div class="col">
-                                <input id="refreshSpeed" type="text" data-provide="slider" />
-                            </div>
-                        </div>
-                    </div>
-                    <br/><br/>
-                    <div class="container table-active table-bordered">
-                        <div class="row p-2">
-                            <div class="col">
-                                <div class="form-group">
-                                    <div class="input-group">
-                                        <div class="input-group-addon"><i class="icons icon-settings p-3"></i></div>
-                                        <input type="text" id="voltage" name="voltage" class="form-control" placeholder="Voltage Setting" required>
+                    <br/>
+                    <table class="table table-active table-bordered">
+                        <tr>
+                            <td>
+                                <i class="d-none icons icon-com display-2 p-4" id="com"></i>
+                                <div class="d-none container table-active table-bordered" id="chargerStatus">
+                                    <div class="row p-2">
+                                        <div class="col text-dark" id="chargerValues">
+                                            <div class="d-none spinner-border text-dark" id="loadValues"></div>
+                                        </div>
+                                    </div>
+                                    <div class="row p-2">
+                                        <div class="col">
+                                            <input id="refreshSpeed" type="text" data-provide="slider" />
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <div class="input-group">
-                                        <div class="input-group-addon"><i class="icons icon-settings p-3"></i></div>
-                                        <input type="text" id="current" name="current" class="form-control" placeholder="Current Setting" required>
+                                <br/><br/>
+                                <div class="container table-active table-bordered">
+                                    <div class="row p-2">
+                                        <div class="col">
+                                            <div class="form-group">
+                                                <div class="input-group">
+                                                    <div class="input-group-addon"><i class="icons icon-settings p-3"></i></div>
+                                                    <input type="text" id="voltage" name="voltage" class="form-control" placeholder="Voltage Setting" required>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <div class="input-group">
+                                                    <div class="input-group-addon"><i class="icons icon-settings p-3"></i></div>
+                                                    <input type="text" id="current" name="current" class="form-control" placeholder="Current Setting" required>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <div class="input-group">
+                                                    <div class="input-group-addon"><i class="icons icon-settings p-3"></i></div>
+                                                    <input type="text" id="crc" name="crc" class="form-control" placeholder="Checksum" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row p-2">
+                                        <div class="col">
+                                            <div>
+                                                <i class="icons icon-plug p-3"></i> Plug-in Automatic Start
+                                                <input type="text" id="plugTimer" class="form-control" data-provide="slider">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row p-2" align="center">
+                                        <div class="col">
+                                            <button type="button" class="btn btn-primary" onclick="delayTimer()"><i class="icons icon-speedometer"></i> Manual Start Timer</button>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <div class="input-group">
-                                        <div class="input-group-addon"><i class="icons icon-settings p-3"></i></div>
-                                        <input type="text" id="crc" name="crc" class="form-control" placeholder="Checksum" required>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row p-2">
-                            <div class="col">
-                                <button type="button" class="btn btn-primary" onclick="timerCharger()"><i class="icons icon-speedometer"></i> Start Timer</button>
-                            </div>
-                        </div>
-                    </div>
+                            </td>
+                        </tr>
+                    </table> 
                 </div>
             </div>
         </div>
@@ -102,14 +116,14 @@
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Start Timer</h5>
+                        <h5 class="modal-title">Delay Start Timer</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
                         <br/>
-                        <div class="mx-auto" id="timer-Slider"></div>
+                        <div class="mx-auto" id="delay-Slider"></div>
                         <br/>
                     </div>
                 </div>

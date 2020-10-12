@@ -48,31 +48,30 @@ body {
 .form-control {
   padding: 0.375rem 0.75rem !important;
 }
-#timer-Slider .rs-range-color  {
+.rs-control .rs-range-color {
   background-color: #33B5E5;
 }
-#timer-Slider .rs-path-color  {
+.rs-control .rs-path-color {
   background-color: #C2E9F7;
 }
-#timer-Slider .rs-handle  {
+.rs-control .rs-handle {
   background-color: #C2E9F7;
   padding: 7px;
   border: 2px solid #C2E9F7;
 }
-#timer-Slider .rs-handle.rs-focus  {
-    border-color: #33B5E5;
+.rs-control .rs-handle.rs-focus {
+  border-color: #33B5E5;
 }
-#timer-Slider .rs-handle:after  {
+.rs-control .rs-handle:after {
   border-color: #33B5E5;
   background-color: #33B5E5;
 }
-#timer-Slider .rs-border  {
+.rs-control .rs-border {
   border-color: transparent;
 }
-#timer-Slider .rs-tooltip-text   {
+.rs-control .rs-tooltip-text {
   font-size: 400%;
 }
-
-#timer-Slider .rs-tooltip-text:after {
-  content: " minutes";
+.rs-control .rs-tooltip-text:after {
+  content: " Minutes";
 }

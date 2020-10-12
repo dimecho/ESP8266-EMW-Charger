@@ -5,26 +5,50 @@ var mainVoltage = 0;
 var chargerTimer = 0;
 var chargeTimerTick = 0;
 var chargeTimerCounter;
+var plugTimer = 0;
 
 document.addEventListener('DOMContentLoaded', function(event)
 {
-    var nvram = new XMLHttpRequest();
-    nvram.responseType = 'json';
-    nvram.onload = function() {
-        if (nvram.status == 200) {
-            var js = nvram.response;
-            titleVersion(js['nvram'][0]);
-            chargerTimer = js['nvram'][12];
-            if(js['nvram'][9] != '0')
-            	$('#voltage').val(js['nvram'][9]);
-            if(js['nvram'][10] != '0')
-            	$('#current').val(js['nvram'][10]);
-            if(js['nvram'][11] != '0')
-            	$('#crc').val(js['nvram'][11]);
+    $('#plugTimer').ionRangeSlider({
+        skin: 'big',
+        grid: true,
+        min: 0,
+        max: 60,
+        from: plugTimer,
+        step: 1,
+        prettify: function(n) { if (n == 0) { return 'Disabled' } return n + ' Minutes' },
+        onFinish: function (e) {
+            plugTimer = e.from;
+            saveSetting(14, e.from);
         }
-    };
-    nvram.open('GET', '/nvram', true);
-    nvram.send();
+    });
+
+    buildMenu(function () {
+        var nvram = new XMLHttpRequest();
+        nvram.responseType = 'json';
+        nvram.onload = function() {
+            if (nvram.status == 200) {
+                var js = nvram.response;
+                titleVersion(js['nvram'][0]);
+                chargerTimer = js['nvram'][12];
+                plugTimer = parseInt(js['nvram'][13]);
+                $('#plugTimer').data('ionRangeSlider').update({
+                   from: plugTimer
+                });
+                if(js['nvram'][9] != '0')
+                    $('#voltage').val(js['nvram'][9]);
+                if(js['nvram'][10] != '0')
+                    $('#current').val(js['nvram'][10]);
+                if(js['nvram'][11] != '0')
+                    $('#crc').val(js['nvram'][11]);
+            }
+        };
+        nvram.open('GET', '/nvram', true);
+        nvram.send();
+    });
+
+    document.getElementById('voltage').addEventListener('change', calculateCRC, false);
+    document.getElementById('current').addEventListener('change', calculateCRC, false);
 });
 
 function initializeSerial() {
@@ -63,19 +87,13 @@ function initializeSerial() {
     //xhr.open('GET', 'serial.php?init=115200', true);
     xhr.open('GET', 'serial.php?init=19200', true);
     xhr.send();
-
-    $('#current').change(function() {
-    	var vvv = parseInt($('#voltage').val());
-		var ccc = parseInt($('#current').val());
-    	$('#crc').val(ccc+vvv); //%1000
-	});
 };
 
-function timerCharger() {
+function delayTimer() {
     var myModal = new bootstrap.Modal(document.getElementById('chargerTimerModal'), {});
     myModal.show();
 
-    $('#timer-Slider').roundSlider({
+    $('#delay-Slider').roundSlider({
         value: chargerTimer,
         //svgMode: true,
         radius: 280,
@@ -84,21 +102,45 @@ function timerCharger() {
         handleShape: 'dot',
         sliderType: 'min-range',
         min: 0,
-        max: 30,
+        max: 60 * 6,
         change: function (args) {
             chargerTimer = args.value;
-            saveSetting(12, args.value);
+            saveSetting(13, args.value);
         }
     });
+};
+
+function calculateCRC() {
+
+	var vvv = document.getElementById('voltage').value;
+	var ccc = document.getElementById('current').value;
+	var crc = parseInt(ccc) + parseInt(vvv);
+
+	vvv = '00' + vvv;
+	ccc = '00' + ccc; //.replace('.','');
+	crc = '00' + crc;
+
+	vvv = vvv.substr(vvv.length - 3);
+	ccc = ccc.substr(ccc.length - 3);
+	crc = crc.substr(crc.length - 3);
+
+    if (parseInt(vvv) > 0)
+	   document.getElementById('voltage').value = vvv;
+
+    if (parseInt(ccc) > 0)
+	   document.getElementById('current').value = ccc;
+
+    if (parseInt(vvv) > 0 && parseInt(ccc) > 0)
+        document.getElementById('crc').value = crc; //%1000
 };
 
 function startCharger() {
 
     var opStatus = $('#opStatus');
 
-	var vvv = $('#voltage').val();
-	var ccc = $('#current').val();
-	var crc = $('#crc').val();
+	var vvv = document.getElementById('voltage').value;
+	var ccc = document.getElementById('current').value;
+	var crc = document.getElementById('crc').value;
 
 	if(vvv == '' || ccc == '' || crc == '') {
 		$.notify({ message: 'Input fields cannot be empty' }, { type: 'danger' });
@@ -114,17 +156,9 @@ function startCharger() {
 		return;
 	}
 
-	vvv = '00' + vvv;
-	ccc = '00' + ccc.replace('.','');
-	crc = '00' + crc;
-
-	vvv = vvv.substr(vvv.length - 3);
-	ccc = ccc.substr(ccc.length - 3);
-	crc = crc.substr(crc.length - 3);
-
-    saveSetting(9, vvv);
-    saveSetting(10, ccc);
-    saveSetting(11, crc);
+    saveSetting(10, vvv);
+    saveSetting(11, ccc);
+    saveSetting(12, crc);
 
     if(chargerTimer == 0)
     {
@@ -146,7 +180,13 @@ function startCharger() {
         };
         xhr.open('GET', 'serial.php?command=M,' + ccc + ',' + vvv + ',' + crc + ',E', true);
         xhr.send();
+
+        if(plugTimer > 0) {
+            $.notify({ message: 'Plug-in Timer is ' + plugTimer + ' Minutes' }, { type: 'success' });
+        }
     }else{
+        clearTimeout(refreshTimer);
+
         $.notify({ message: 'Charger is on Timer' }, { type: 'warning' });
 
         opStatus.empty();
@@ -154,7 +194,6 @@ function startCharger() {
 
         chargeTimerTick = chargerTimer * 60;
         chargeTimerCounter = setInterval(timerStatus, 1000);
-
 
         var xhr = new XMLHttpRequest();
         xhr.open('GET', '/start', true);
@@ -171,7 +210,9 @@ function timerStatus() {
         var st = $('<h2>',{ class: 'text-success' }).append('STARTED BY TIMER');
         opStatus.empty();
         opStatus.append(st);
+        
         clearInterval(chargeTimerCounter);
+        getChargerState();
     }else{
         var minutes = Math.floor(chargeTimerTick / 60);
         var seconds = chargeTimerTick - minutes * 60;

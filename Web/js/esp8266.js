@@ -28,38 +28,40 @@ document.addEventListener('DOMContentLoaded', function(event)
 {
     $('#esp8266-flash-select').removeClass('d-none'); //.show();
 
-    var nvram  = new XMLHttpRequest();
-    nvram.responseType = 'json';
-    nvram.onload = function() {
-        if (nvram.status == 200) {
-            var js = nvram.response;
-            titleVersion(js['nvram'][0]);
+    buildMenu(function () {
+        var nvram  = new XMLHttpRequest();
+        nvram.responseType = 'json';
+        nvram.onload = function() {
+            if (nvram.status == 200) {
+                var js = nvram.response;
+                titleVersion(js['nvram'][0]);
 
-            if(js['nvram'][1] == '0') {
-                $('#WiFiModeAP').prop('checked', true);
-            }else{
-                $('#WiFiModeClient').prop('checked', true);
+                if(js['nvram'][1] == '0') {
+                    $('#WiFiModeAP').prop('checked', true);
+                }else{
+                    $('#WiFiModeClient').prop('checked', true);
+                }
+                var bool_value = js['nvram'][2] == '1' ? true : false;
+                $('#WiFiHidden').val(js['nvram'][2]);
+                $('#WiFiHiddenCheckbox').prop('checked', bool_value);
+                
+                $('#WiFiPhyMode').val(js['nvram'][3]);
+                $('#WiFiPower').val(js['nvram'][4]);
+                $('#WiFiChannel').val(js['nvram'][5]);
+                $('#WiFiSSID').val(js['nvram'][6]);
+
+                bool_value = js['nvram'][7] == '1' ? true : false;
+                $('#EnableLOG').val(js['nvram'][7]);
+                $('#EnableLOGCheckbox').prop('checked', bool_value);
+
+                $('#EnableLOGInterval').val(js['nvram'][8]);
+                $('.spinner-border').addClass('d-none'); //.hide();
+                $('#parameters').removeClass('d-none'); //.show();
             }
-            var bool_value = js['nvram'][2] == '1' ? true : false;
-            $('#WiFiHidden').val(js['nvram'][2]);
-            $('#WiFiHiddenCheckbox').prop('checked', bool_value);
-            
-            $('#WiFiPhyMode').val(js['nvram'][3]);
-            $('#WiFiPower').val(js['nvram'][4]);
-            $('#WiFiChannel').val(js['nvram'][5]);
-            $('#WiFiSSID').val(js['nvram'][6]);
-
-            bool_value = js['nvram'][7] == '1' ? true : false;
-            $('#EnableLOG').val(js['nvram'][7]);
-            $('#EnableLOGCheckbox').prop('checked', bool_value);
-
-            $('#EnableLOGInterval').val(js['nvram'][8]);
-            $('.spinner-border').addClass('d-none'); //.hide();
-            $('#parameters').removeClass('d-none'); //.show();
-        }
-    };
-    nvram.open('GET', '/nvram', true);
-    nvram.send();
+        };
+        nvram.open('GET', '/nvram', true);
+        nvram.send();
+    });
 
     $('#EnableLOGInterval').on('input', function() {
         var v = parseInt(this.value);

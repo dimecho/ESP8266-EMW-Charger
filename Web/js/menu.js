@@ -4,11 +4,6 @@ loadTheme();
 var serialTimeout = 12000;
 var statusRefreshTimer;
 
-document.addEventListener('DOMContentLoaded', function(event)
-{
-    buildMenu();
-});
-
 function titleVersion(version)
 {
     document.title = "EMW Charger Console (" + version + ")"
@@ -83,7 +78,7 @@ function getJSONFloatValue(value, callback) {
     return f;
 };
 
-function buildMenu() {
+function buildMenu(callback) {
 
     var file = 'js/menu.json';
 
@@ -91,126 +86,118 @@ function buildMenu() {
     xhr.responseType = 'json';
     xhr.onreadystatechange = function() {
         if (xhr.readyState == XMLHttpRequest.DONE) {
-           if (xhr.status == 200) {
-            var js = xhr.response;
-            //console.log(js);
-
-            var nav = $('#mainMenu');
-            var wrap = $('<div>', { class: 'container' }); // { class: 'd-flex mx-auto' });
-            
-            var button = $('<button>', { class: 'navbar-toggler navbar-toggler-right', type: 'button', 'data-toggle':'collapse', 'data-target': '#navbarResponsive', 'aria-controls': 'navbarResponsive', 'aria-expanded': false, 'aria-label': 'Menu' });
-            var span = $('<span>', { class: 'icons icon-menu' }); //navbar-toggler-icon' });
-            button.append(span);
-            wrap.append(button);
-
-            var div = $('<div>', { class: 'collapse navbar-collapse', id:'navbarResponsive' });
-
-            for(var k in js.menu)
+            if (xhr.status == 200)
             {
-                console.log(k);
-                console.log(js.menu[k].id);
+                var js = xhr.response;
+                //console.log(js);
 
-                if(js.menu[k].id == undefined)
-                    continue;
+                var nav = $('#mainMenu');
+                var wrap = $('<div>', { class: 'container' }); // { class: 'd-flex mx-auto' });
+                
+                var button = $('<button>', { class: 'navbar-toggler navbar-toggler-right', type: 'button', 'data-toggle':'collapse', 'data-target': '#navbarResponsive', 'aria-controls': 'navbarResponsive', 'aria-expanded': false, 'aria-label': 'Menu' });
+                var span = $('<span>', { class: 'icons icon-menu' }); //navbar-toggler-icon' });
+                button.append(span);
+                wrap.append(button);
 
-                var ul = $('<ul>', { class: 'navbar-nav' });
-                var li = $('<li>', { class: 'nav-item' });
-                var a = $('<a>', { class: 'nav-link', href: '#' });
-                var _i = $('<i>', { class: 'icons ' + js.menu[k].icon });
-                
-                a.append(_i);
-                a.append($('<b>').append(' ' + js.menu[k].id));
-                li.append(a);
-                
-                if(js.menu[k].dropdown)
+                var div = $('<div>', { class: 'collapse navbar-collapse', id:'navbarResponsive' });
+
+                for(var k in js.menu)
                 {
-                    li.addClass('dropdown');
-                    a.addClass('dropdown-toggle');
-                    a.attr('data-toggle','dropdown');
-                    a.attr('aria-haspopup',true);
-                    a.attr('aria-expanded',false);
+                    console.log(k);
+                    console.log(js.menu[k].id);
 
-                    var dropdown_menu = $('<div>', { class: 'dropdown-menu' });
+                    if(js.menu[k].id == undefined)
+                        continue;
 
-                    for(var d in js.menu[k].dropdown)
+                    var ul = $('<ul>', { class: 'navbar-nav' });
+                    var li = $('<li>', { class: 'nav-item' });
+                    var a = $('<a>', { class: 'nav-link', href: '#' });
+                    var _i = $('<i>', { class: 'icons ' + js.menu[k].icon });
+                    
+                    a.append(_i);
+                    a.append($('<b>').append(' ' + js.menu[k].id));
+                    li.append(a);
+                    
+                    if(js.menu[k].dropdown)
                     {
-                        //console.log(js.menu[k].dropdown[d].id);
-                        var dropdown_id = js.menu[k].dropdown[d].id;
+                        li.addClass('dropdown');
+                        a.addClass('dropdown-toggle');
+                        a.attr('data-toggle','dropdown');
+                        a.attr('aria-haspopup',true);
+                        a.attr('aria-expanded',false);
 
-                        var onclick = js.menu[k].dropdown[d].onClick;
-                        if(onclick == undefined) {
+                        var dropdown_menu = $('<div>', { class: 'dropdown-menu' });
 
-                            var d = $('<div>', { class: 'dropdown-divider' });
-                            dropdown_menu.append(d);
-                        }else{
-                            
-                            var dropdown_item = $('<a>', { class: 'dropdown-item', href: '#' });
+                        for(var d in js.menu[k].dropdown)
+                        {
+                            //console.log(js.menu[k].dropdown[d].id);
+                            var dropdown_id = js.menu[k].dropdown[d].id;
 
-                            var icon = $('<i>', { class: 'icons ' + js.menu[k].dropdown[d].icon });
-                            var item = $('<span>');
+                            var onclick = js.menu[k].dropdown[d].onClick;
+                            if(onclick == undefined) {
 
-                            if (onclick.indexOf('/') != -1 && onclick.indexOf('alertify') == -1)
-                            {
-                                dropdown_item.attr('href', onclick);
+                                var d = $('<div>', { class: 'dropdown-divider' });
+                                dropdown_menu.append(d);
                             }else{
-                                dropdown_item.attr('onClick', onclick);
-                            }
+                                
+                                var dropdown_item = $('<a>', { class: 'dropdown-item', href: '#' });
 
-                            dropdown_item.append(icon);
-                            dropdown_item.append(item.append(' ' + dropdown_id));
-                            dropdown_menu.append(dropdown_item);
+                                var icon = $('<i>', { class: 'icons ' + js.menu[k].dropdown[d].icon });
+                                var item = $('<span>');
+
+                                if (onclick.indexOf('/') != -1 && onclick.indexOf('alertify') == -1)
+                                {
+                                    dropdown_item.attr('href', onclick);
+                                }else{
+                                    dropdown_item.attr('onClick', onclick);
+                                }
+
+                                dropdown_item.append(icon);
+                                dropdown_item.append(item.append(' ' + dropdown_id));
+                                dropdown_menu.append(dropdown_item);
+                            }
                         }
+
+                        li.append(dropdown_menu);
+                    }else{
+                        a.attr('href', js.menu[k].onClick);
                     }
 
-                    li.append(dropdown_menu);
-                }else{
-                    a.attr('href', js.menu[k].onClick);
+                    ul.append(li);
+                    div.append(ul);
                 }
+                wrap.append(div);
 
-                ul.append(li);
-                div.append(ul);
+                var col = $('<div>', { class: 'col-auto mr-auto mb-auto mt-auto', id: 'opStatus' });
+                wrap.append(col);
+
+                var col = $('<div>', { class: 'col-auto mb-auto mt-auto' });
+                var theme_icon = $('<i>', { class: 'icons icon-theme icon-day-and-night text-dark', 'data-toggle': 'tooltip', 'data-html': 'true' });
+                theme_icon.click(function() {
+                    if(theme == '.slate') {
+                        theme = '';
+                    }else{
+                        theme = '.slate';
+                    }
+                    setCookie('theme', theme, 1);
+                    location.reload();
+                    //loadTheme();
+                    //setTheme();
+                });
+                col.append(theme_icon);
+                wrap.append(col);
+
+                nav.append(wrap);
+
+                setTheme();
+
+                //$('[data-toggle='tooltip']').tooltip();
             }
-            wrap.append(div);
-
-            var col = $('<div>', { class: 'col-auto mr-auto mb-auto mt-auto', id: 'opStatus' });
-            wrap.append(col);
-
-            var col = $('<div>', { class: 'col-auto mb-auto mt-auto' });
-            var theme_icon = $('<i>', { class: 'icons icon-theme icon-day-and-night text-dark', 'data-toggle': 'tooltip', 'data-html': 'true' });
-            theme_icon.click(function() {
-                if(theme == '.slate') {
-                    theme = '';
-                }else{
-                    theme = '.slate';
-                }
-                setCookie('theme', theme, 1);
-                location.reload();
-                //loadTheme();
-                //setTheme();
-            });
-            col.append(theme_icon);
-            wrap.append(col);
-
-            nav.append(wrap);
-
-            setTheme();
-
-            //$('[data-toggle='tooltip']').tooltip();
-
-            //Build the Menu before we get frozen with serial.php
-            var path = window.location.pathname;
-            var page = path.split('/').pop();
-            if(page == '' || page == 'index.php') {
-                setTimeout(function () { //wait for icons to load
-                    initializeSerial();
-                }, 1000);
-            }
-           }
+            callback();
         }
     };
     xhr.open('GET', file, true);
     xhr.send();
-
 };
 
 function detectTheme()
@@ -278,7 +265,7 @@ function setCookie(name, value, exdays) {
     var exdate = new Date();
     exdate.setDate(exdate.getDate() + exdays);
     var c_value = escape(value) + (exdays == null ? '' : '; expires=' + exdate.toUTCString());
-    document.cookie = name + '=' + c_value;
+    document.cookie = name + '=' + c_value + '; SameSite=Lax';
 };
 
 function getCookie(name) {

@@ -10,6 +10,11 @@ cp -rf  ./Web ./data
 rm ./data/img/screenshot.png
 rm ./data/img/charger.png
 
+purgecss --css data/bootstrap.css --content data/*.html --whitelist bg-success,bg-danger,bg-warning --output data/css/bootstrap.css
+purgecss --css data/bootstrap.slate.css --content data/*.html --whitelist bg-success,bg-danger,bg-warning  --output data/css/bootstrap.slate.css
+purgecss --css data/roundslider.css --content data/*.html --whitelist --output data/css/roundslider.css
+purgecss --css data/rangeslider.css --content data/*.html --whitelist --output data/css/rangeslider.css
+
 #==============
 #Download Tool
 #==============
@@ -32,4 +37,4 @@ done
 #==============
 #Compress Files
 #==============
-./tools/mkspiffs -c ./data/ -b 8192 -p 256 -s 480000 flash-spiffs.bin
+./tools/mkspiffs -c ./data/ -b 8192 -p 256 -s 440000 flash-spiffs.bin

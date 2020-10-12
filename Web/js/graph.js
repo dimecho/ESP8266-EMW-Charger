@@ -56,19 +56,21 @@ document.addEventListener("DOMContentLoaded", function(event)
 
     initChart();
 
-    var nvram = new XMLHttpRequest();
-    nvram.responseType = 'json';
-    nvram.onload = function() {
-        if (nvram.status == 200) {
-            var js = nvram.response;
-            titleVersion(js['nvram'][0]);
-            if(js["nvram"][7] != "1") {
-                $.notify({ message: "Data Collection is Disabled in <a href='esp8266.html'>ESP8266</a>" }, { type: "warning" });
+    buildMenu(function () {
+        var nvram = new XMLHttpRequest();
+        nvram.responseType = 'json';
+        nvram.onload = function() {
+            if (nvram.status == 200) {
+                var js = nvram.response;
+                titleVersion(js['nvram'][0]);
+                if(js["nvram"][7] != "1") {
+                    $.notify({ message: "Data Collection is Disabled in <a href='esp8266.html'>ESP8266</a>" }, { type: "warning" });
+                }
             }
-        }
-    };
-    nvram.open('GET', '/nvram', true);
-    nvram.send();
+        };
+        nvram.open('GET', '/nvram', true);
+        nvram.send();
+    });
 });
 
 function graphTheme() {
