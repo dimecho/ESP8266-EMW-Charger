@@ -232,6 +232,9 @@ void loop()
 {
   server.handleClient();
 
+  if ((millis() - syncTime) < LOG_INTERVAL) return;
+  syncTime = millis();
+  
   if (startTime > 0 && (millis() - startTime) > TIMER_DELAY) { //Manual Start Timer
     chargerStart();
     startTime = 0; //start only once
@@ -239,17 +242,14 @@ void loop()
     chargerStart();
     plugTime = 0; //start only once
   }
-
-  if ((millis() - syncTime) < LOG_INTERVAL) return;
-  syncTime = millis();
-
+  
   String output = flushSerial();
 
-  if (output.indexOf("R") != -1) {
+  //if (output.indexOf("R") != -1) {
     if (PLUG_DELAY > 0) {
       plugTime = millis();
     }
-  }
+  //}
 
   if (output.indexOf("D") != -1) { //Capture reports only
     if (DATA_LOG > 0) {

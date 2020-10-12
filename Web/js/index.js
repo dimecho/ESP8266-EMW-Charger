@@ -19,29 +19,7 @@ document.addEventListener('DOMContentLoaded', function(event)
         prettify: function(n) { if (n == 0) { return 'Disabled' } return n + ' Minutes' },
         onFinish: function (e) {
             plugTimer = e.from;
-
-            //saveSetting(14, e.from, true);
-            var xhr = new XMLHttpRequest();
-			xhr.onload = function() {
-            	if (xhr.status == 200) {
-            		if(plugTimer == 0) {
-		            	var reset = new XMLHttpRequest();
-		            	reset.onload = function() {
-		            		if (reset.status == 200) {
-		            			$.notify({ message: 'Plug-in Timer Disabled' }, { type: 'warning' });
-		            		}else{
-		            			$.notify({ message: 'Plug-in Timer Failed' }, { type: 'danger' });
-		            		}
-		            	}
-		            	reset.open('GET', '/reset', true);
-		        		reset.send();
-		            }else{
-		            	$.notify({ message: 'Reset ESP for Plug-in Timer to Start' }, { type: 'success' });
-		            }
-            	}
-           	}
-		    xhr.open('GET', '/nvram?offset=14&value=' + plugTimer, true);
-		    xhr.send();
+            startPlugTimer(e.from);
         }
     });
 
@@ -162,6 +140,44 @@ function calculateCRC() {
     }
 };
 
+function startPlugTimer(value) {
+
+	var xhr = new XMLHttpRequest();
+	xhr.onload = function() {
+    	if (xhr.status == 200) {
+    		if(value == 0) {
+    			var reset = new XMLHttpRequest();
+				reset.onload = function() {
+				if (reset.status == 200) {
+						$.notify({ message: 'Plug-in Timer Disabled' }, { type: 'warning' });
+                        $('#plugTimer').data('ionRangeSlider').update({
+                           from: 0
+                        });
+					}else{
+						$.notify({ message: 'Plug-in Timer Failed' }, { type: 'danger' });
+					}
+				}
+				reset.open('GET', '/reset', true);
+				reset.send();
+            }else{
+                if(chargerTimer > 0) {
+                    $.notify({ message: 'Manual Start Timer Conflict!' }, { type: 'danger' });
+                    
+                    clearInterval(chargeTimerCounter);
+                    chargerTimer = 0;
+                    saveSetting(13, 0, true);
+
+                    $.notify({ message: 'Manual Start Timer Disabled' }, { type: 'warning' });
+                    //getChargerState();
+                }
+                $.notify({ message: 'Reset ESP for Plug-in Timer to Start' }, { type: 'success' });
+            }
+    	}
+   	}
+    xhr.open('GET', '/nvram?offset=14&value=' + value, true);
+    xhr.send();
+};
+
 function startCharger() {
 
     var opStatus = $('#opStatus');
@@ -215,7 +231,12 @@ function startCharger() {
     }else{
         clearTimeout(refreshTimer);
 
-        $.notify({ message: 'Charger is on Timer' }, { type: 'warning' });
+        if(plugTimer > 0) {
+            $.notify({ message: 'Plug-in Timer Conflict!' }, { type: 'danger' });
+            startPlugTimer(0); //disable
+        }else{
+        	$.notify({ message: 'Manual Start Timer Started' }, { type: 'warning' });
+        }
 
         opStatus.empty();
         opStatus.append($('<h2>',{ class: 'text-warning' }));
@@ -321,7 +342,13 @@ function getChargerState() {
                     for(var i = 0; i < s.length; i++) {
                         if(s[i].indexOf('R') != -1) {
                             opStatus.empty();
-                            opStatus.append($('<h2>',{ class: 'text-success' }).append('READY'));
+                            var h = $('<h2>',{ class: 'text-success' });
+                            if(plugTimer == 0) {
+                            	h.append('READY');
+                            }else{
+                            	h.append('READY (WITH PLUGIN TIMER)');
+                            }
+                            opStatus.append(h);
                         }else if(s[i].indexOf('D') != -1) {
                             opStatus.empty();
                             opStatus.append($('<h2>',{ class: 'text-danger' }).append('CHARGING ' + parseInt(s[i].replace('D', '')) + '%'));
