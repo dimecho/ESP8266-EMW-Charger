@@ -6,7 +6,7 @@ var statusRefreshTimer;
 
 function titleVersion(version)
 {
-    document.title = "EMW Charger Console (" + version + ")"
+    document.title = "EMW Charger " + version;
 };
 
 function setDefaultValue(value, defaultValue){

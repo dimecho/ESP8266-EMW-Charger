@@ -3,6 +3,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
+#include "version.h"
 
 #ifdef ARDUINO_MOD_WIFI_ESP8266
 #define LED_BUILTIN 1 //GPIO1=Olimex
@@ -10,7 +11,6 @@
 #define LED_BUILTIN 2 //GPIO2=ESP-12/WeMos(D4)
 #endif
 
-#define VERSION     1.01
 #define DEBUG       false
 #define EEPROM_ID   0x3BDAB201 //Identify Sketch by EEPROM
 
@@ -163,8 +163,12 @@ void setup()
     ESP.restart();
   });
   server.on("/start", HTTP_GET, []() {
-    if (TIMER_DELAY > 0) {
-      startTime = millis();
+    if (server.hasArg("timer")) {
+      int i = server.arg("timer").toInt();
+      if (i > 0) {
+        TIMER_DELAY = i * 60 * 1000;
+        startTime = millis();
+      }
     }
     server.send(200, text_plain, String(TIMER_DELAY));
   });
@@ -282,7 +286,7 @@ String NVRAM(uint8_t from, uint8_t to, uint8_t skip)
   String out = "{\n";
 
   out += "\t\"nvram\": [\"";
-  out += VERSION;
+  out += _VERSION;
   out += "\",";
 
   for (uint8_t i = from; i <= to; i++) {

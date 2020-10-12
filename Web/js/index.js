@@ -19,7 +19,29 @@ document.addEventListener('DOMContentLoaded', function(event)
         prettify: function(n) { if (n == 0) { return 'Disabled' } return n + ' Minutes' },
         onFinish: function (e) {
             plugTimer = e.from;
-            saveSetting(14, e.from);
+
+            //saveSetting(14, e.from, true);
+            var xhr = new XMLHttpRequest();
+			xhr.onload = function() {
+            	if (xhr.status == 200) {
+            		if(plugTimer == 0) {
+		            	var reset = new XMLHttpRequest();
+		            	reset.onload = function() {
+		            		if (reset.status == 200) {
+		            			$.notify({ message: 'Plug-in Timer Disabled' }, { type: 'warning' });
+		            		}else{
+		            			$.notify({ message: 'Plug-in Timer Failed' }, { type: 'danger' });
+		            		}
+		            	}
+		            	reset.open('GET', '/reset', true);
+		        		reset.send();
+		            }else{
+		            	$.notify({ message: 'Reset ESP for Plug-in Timer to Start' }, { type: 'success' });
+		            }
+            	}
+           	}
+		    xhr.open('GET', '/nvram?offset=14&value=' + plugTimer, true);
+		    xhr.send();
         }
     });
 
@@ -105,7 +127,7 @@ function delayTimer() {
         max: 60 * 6,
         change: function (args) {
             chargerTimer = args.value;
-            saveSetting(13, args.value);
+            saveSetting(13, args.value, true);
         }
     });
 };
@@ -124,14 +146,20 @@ function calculateCRC() {
 	ccc = ccc.substr(ccc.length - 3);
 	crc = crc.substr(crc.length - 3);
 
-    if (parseInt(vvv) > 0)
+    if (parseInt(vvv) > 0) {
 	   document.getElementById('voltage').value = vvv;
+	   saveSetting(10, vvv, true);
+    }
 
-    if (parseInt(ccc) > 0)
+    if (parseInt(ccc) > 0) {
 	   document.getElementById('current').value = ccc;
+	   saveSetting(11, ccc, true);
+    }
 
-    if (parseInt(vvv) > 0 && parseInt(ccc) > 0)
+    if (parseInt(vvv) > 0 && parseInt(ccc) > 0) {
         document.getElementById('crc').value = crc; //%1000
+        saveSetting(12, crc, true);
+    }
 };
 
 function startCharger() {
@@ -156,9 +184,9 @@ function startCharger() {
 		return;
 	}
 
-    saveSetting(10, vvv);
-    saveSetting(11, ccc);
-    saveSetting(12, crc);
+    saveSetting(10, vvv, false);
+    saveSetting(11, ccc, false);
+    saveSetting(12, crc, false);
 
     if(chargerTimer == 0)
     {
@@ -196,7 +224,7 @@ function startCharger() {
         chargeTimerCounter = setInterval(timerStatus, 1000);
 
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', '/start', true);
+        xhr.open('GET', '/start?timer=' + chargerTimer , true);
         xhr.send();
     }
 };
@@ -340,9 +368,9 @@ function getChargerState() {
     }, refreshSpeed);
 };
 
-function saveSetting(offset, value) {
+function saveSetting(offset, value, async) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/nvram?offset=' + offset + '&value=' + value, true);
+    xhr.open('GET', '/nvram?offset=' + offset + '&value=' + value, async);
     xhr.send();
 };
 
