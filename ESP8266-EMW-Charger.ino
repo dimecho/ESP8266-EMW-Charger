@@ -142,6 +142,10 @@ void setup()
   TIMER_DELAY = TIMER_DELAY * 60 * 1000;
   PLUG_DELAY = PLUG_DELAY * 60 * 1000;
 
+  if (PLUG_DELAY > 0) {
+    plugTime = millis();
+  }
+
   //===============
   //Web OTA Updater
   //===============
@@ -244,12 +248,6 @@ void loop()
   }
   
   String output = flushSerial();
-
-  //if (output.indexOf("R") != -1) {
-    if (PLUG_DELAY > 0) {
-      plugTime = millis();
-    }
-  //}
 
   if (output.indexOf("D") != -1) { //Capture reports only
     if (DATA_LOG > 0) {
